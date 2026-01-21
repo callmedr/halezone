@@ -1,9 +1,9 @@
 {
-  "name": "halezone:-숨결의-온도",
+  "name": "halezone",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://callmedr.github.io/halezone",
+  
   "scripts": {
     "dev": "vite",
     "build": "vite build",

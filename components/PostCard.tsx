@@ -15,45 +15,44 @@ const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
     day: 'numeric'
   });
 
-  // 커스텀 태그 제거 로직: [IMAGE], [HR], [HL]...[/HL] 등을 모두 빈 문자열로 대체
   const cleanDescription = post.content
-    .replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '') // 태그 자체를 제거
-    .replace(/\s+/g, ' ') // 불필요한 공백/줄바꿈 정리
+    .replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
   return (
     <article 
-      className="group cursor-pointer transition-all duration-500"
+      className="group cursor-pointer transition-all duration-500 mb-4"
       onClick={() => onClick(post)}
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-2xl mb-5 bg-white shadow-sm border border-emerald-50/50 flex items-center justify-center">
-        <div className="absolute inset-0 bg-emerald-900/0 group-hover:bg-emerald-900/5 transition-all duration-500 z-10"></div>
+      <div className="relative aspect-[16/9] md:aspect-[16/10] overflow-hidden rounded-[2.5rem] mb-6 md:mb-10 bg-white shadow-md border border-emerald-50/50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-emerald-950/0 group-hover:bg-emerald-950/5 transition-all duration-500 z-10"></div>
         {post.image_url ? (
           <img 
             src={post.image_url} 
             alt={post.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-emerald-100 bg-[#f8fafc] group-hover:bg-lime-50 transition-colors">
-            <span className="serif italic text-sm font-medium tracking-widest text-emerald-200">HALEZONE</span>
+          <div className="w-full h-full flex items-center justify-center text-emerald-100 bg-[#fbfcfd] group-hover:bg-lime-50/30 transition-colors">
+            <span className="serif italic text-sm md:text-lg font-black tracking-[0.4em] text-emerald-100/60 uppercase">Halezone Archive</span>
           </div>
         )}
-        <div className="absolute top-4 left-4 z-20">
-          <span className="bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            READ MORE
+        <div className="absolute top-6 right-6 z-20">
+          <span className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-2xl text-[12px] md:text-[14px] font-black text-emerald-900 shadow-xl border border-emerald-50/50 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-3 group-hover:translate-y-0 uppercase tracking-widest">
+            Open Record
           </span>
         </div>
       </div>
-      <div className="px-1">
-        <div className="flex items-center text-[11px] font-semibold text-emerald-500/70 mb-2 space-x-1 uppercase tracking-wider">
-          <Calendar size={12} className="text-lime-500" />
+      <div className="px-4 md:px-6">
+        <div className="flex items-center text-[13px] md:text-[15px] font-black text-emerald-500/80 mb-4 space-x-3 uppercase tracking-[0.2em]">
+          <Calendar size={14} className="text-lime-500" />
           <span>{formattedDate}</span>
         </div>
-        <h3 className="serif text-xl font-bold text-gray-800 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
+        <h3 className="serif text-2xl md:text-4xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-tight md:leading-snug mb-5">
           {post.title}
         </h3>
-        <p className="mt-3 text-gray-400 text-sm line-clamp-2 leading-relaxed font-light">
+        <p className="text-gray-500 text-lg md:text-xl line-clamp-2 leading-relaxed font-light">
           {cleanDescription}
         </p>
       </div>
