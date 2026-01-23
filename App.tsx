@@ -37,6 +37,36 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
+  // 브라우저 탭 제목 실시간 업데이트
+  useEffect(() => {
+    const baseTitle = "Halezone: 숨결의 온도";
+    let newTitle = baseTitle;
+
+    switch (view) {
+      case 'LIST':
+        newTitle = baseTitle;
+        break;
+      case 'DETAIL':
+        if (selectedPost) {
+          newTitle = `${selectedPost.title} | Halezone`;
+        }
+        break;
+      case 'WRITE':
+        newTitle = "새로운 숨결 기록 | Halezone";
+        break;
+      case 'EDIT':
+        newTitle = "숨결 수정 중 | Halezone";
+        break;
+      case 'LOGIN':
+        newTitle = "관리자 접속 | Halezone";
+        break;
+      default:
+        newTitle = baseTitle;
+    }
+
+    document.title = newTitle;
+  }, [view, selectedPost]);
+
   // 방문 기록 남기기 (접속 시 1회)
   useEffect(() => {
     const recordVisit = async () => {
@@ -87,11 +117,20 @@ const App: React.FC = () => {
       setIsAdmin(session?.user?.email === ADMIN_EMAIL);
     };
     checkUser();
+    
+    // 로그아웃이나 세션 변경 시의 동작 제어
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(session?.user?.email === ADMIN_EMAIL);
+      const isStillAdmin = session?.user?.email === ADMIN_EMAIL;
+      setIsAdmin(isStillAdmin);
+      
+      // 관리자 권한이 없어지면 상태 초기화
+      if (!isStillAdmin) {
+        if (view === 'WRITE' || view === 'EDIT') setView('LIST');
+        setVisitorCount(null);
+      }
     });
     return () => authListener.subscription.unsubscribe();
-  }, []);
+  }, [view]);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -114,10 +153,28 @@ const App: React.FC = () => {
   }, [fetchPosts]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setView('LIST');
-    setVisitorCount(null);
-    setToast({ message: '로그아웃 되었습니다.', type: 'success' });
+    try {
+      // 1. 상태 즉시 초기화 (UI 지연 방지)
+      setIsAdmin(false);
+      setVisitorCount(null);
+      setSearchQuery('');
+      
+      // 2. Supabase 로그아웃 호출
+      await supabase.auth.signOut();
+      
+      setToast({ message: '안전하게 로그아웃 되었습니다.', type: 'success' });
+      
+      // 3. 브라우저 세션 캐시를 완전히 비우기 위해 홈으로 리다이렉트하며 페이지 새로고침
+      setTimeout(() => {
+        window.location.href = '/'; 
+      }, 800);
+      
+    } catch (e) {
+      console.error('Logout error:', e);
+      // 에러가 나더라도 클라이언트 상태는 무조건 해제
+      setIsAdmin(false);
+      window.location.href = '/';
+    }
   };
 
   const handlePostClick = (post: Post) => {
@@ -223,8 +280,9 @@ const App: React.FC = () => {
       return (
         <div className="animate-in fade-in duration-1000">
           <div className="max-w-xl mx-auto mb-14 md:mb-12 relative group px-4">
-            <div className="absolute inset-0 bg-emerald-100/20 blur-[3.5rem] md:blur-[2rem] rounded-full group-focus-within:bg-emerald-200/50 transition-all duration-500"></div>
-            <div className="relative flex items-center bg-white border border-emerald-50 rounded-[2rem] md:rounded-lg px-7 py-5 md:px-3.5 md:py-2 shadow-lg focus-within:shadow-xl focus-within:border-emerald-300 transition-all duration-300">
+            <div className="absolute inset-0 bg-emerald-100/20 blur-[3.5rem] md:blur-[2rem] rounded-full group-focus-within:bg-emerald-200/50 transition-all duration-500 pointer-events-none"></div>
+            
+            <div className="relative flex items-center bg-white border border-emerald-50 rounded-[2rem] md:rounded-lg px-7 py-5 md:px-3.5 md:py-2 shadow-lg focus-within:shadow-xl focus-within:border-emerald-300 transition-all duration-300 z-10">
               <Search size={24} className="text-emerald-400 mr-5 md:mr-2 shrink-0 md:w-3.5 md:h-3.5" />
               <input 
                 type="text" 
@@ -240,22 +298,20 @@ const App: React.FC = () => {
               )}
             </div>
 
-            {/* 관리자 로그아웃 버튼 (검색바 바로 아래) */}
             {isAdmin && (
-              <div className="mt-5 md:mt-3 flex justify-center animate-in slide-in-from-top-2 fade-in duration-500">
+              <div className="mt-5 md:mt-3 flex justify-center animate-in slide-in-from-top-2 fade-in duration-500 relative z-20">
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 px-5 py-2 md:px-3 md:py-1 text-[12px] md:text-[9px] font-black tracking-tighter text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all border border-transparent hover:border-emerald-100/50 uppercase"
+                  className="flex items-center space-x-2 px-6 py-2.5 md:px-3 md:py-1 text-[13px] md:text-[9px] font-black tracking-tighter text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all border border-transparent hover:border-emerald-100/50 uppercase cursor-pointer"
                 >
-                  <LogOut size={14} className="md:w-3 md:h-3" />
+                  <LogOut size={15} className="md:w-3 md:h-3" />
                   <span>Admin Logout</span>
                 </button>
               </div>
             )}
 
-            {/* 관리자 전용 방문자 수 표시 (로그아웃 버튼 아래) */}
             {isAdmin && visitorCount !== null && (
-              <div className="mt-4 md:mt-2 flex justify-center animate-in slide-in-from-top-2 fade-in duration-700">
+              <div className="mt-4 md:mt-2 flex justify-center animate-in slide-in-from-top-2 fade-in duration-700 relative z-20">
                 <div className="flex items-center space-x-2.5 md:space-x-1.5 px-6 py-2.5 md:px-3 md:py-1 bg-emerald-50/40 rounded-full border border-emerald-100/30 shadow-sm">
                   <Users size={16} className="text-emerald-400 md:w-3 md:h-3" />
                   <span className="serif text-[12px] md:text-[9px] font-bold text-emerald-800 tracking-tight">
