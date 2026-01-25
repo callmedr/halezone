@@ -1,15 +1,20 @@
 
 import React from 'react';
 import { LogIn, PlusCircle, Home } from 'lucide-react';
+import { ViewState } from '../types';
 
 interface HeaderProps {
   isAdmin: boolean;
+  view: ViewState;
   onNavigate: (view: any) => void;
   onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAdmin, onNavigate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isAdmin, view, onNavigate, onLogout }) => {
   const LOGO_IMAGE_URL = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/hale_logo.PNG"; 
+
+  // 목록 페이지에서만 h1을 사용하고, 상세 페이지 등에서는 div를 사용하여 SEO 계층을 최적화합니다.
+  const TitleTag = view === 'LIST' ? 'h1' : 'div';
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-emerald-50/50 py-5 md:py-2.5 px-6 md:px-10 mb-6 md:mb-6 shadow-sm">
@@ -29,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, onNavigate, onLogout }) => {
           
           <div className="flex flex-col">
             <span className="text-emerald-600 text-[10px] md:text-[8px] font-black uppercase tracking-[0.25em] leading-none mb-1 md:mb-0.5">Halezone</span>
-            <h1 className="serif text-xl md:text-sm font-bold text-gray-800 leading-tight">숨결의 온도</h1>
+            <TitleTag className="serif text-xl md:text-sm font-bold text-gray-800 leading-tight">숨결의 온도</TitleTag>
           </div>
         </div>
         

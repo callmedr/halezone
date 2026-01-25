@@ -5,7 +5,7 @@ import { Calendar } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
-  onClick: (post: Post) => void;
+  onClick: () => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
@@ -23,7 +23,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
   return (
     <article 
       className="group cursor-pointer transition-all duration-500 mb-2 md:mb-0"
-      onClick={() => onClick(post)}
+      onClick={onClick}
     >
       <div className="relative aspect-[16/9] md:aspect-[16/10] overflow-hidden rounded-[2rem] md:rounded-lg mb-5 md:mb-3 bg-white shadow-md border border-emerald-50/50 flex items-center justify-center">
         <div className="absolute inset-0 bg-emerald-950/0 group-hover:bg-emerald-950/5 transition-all duration-500 z-10"></div>
