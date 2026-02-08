@@ -17,4 +17,4 @@ export interface BlogRequest {
   post_id: any | null;
 }
 
-export type ViewState = 'LIST' | 'DETAIL' | 'WRITE' | 'EDIT' | 'LOGIN';
+export type ViewState = 'MAIN' | 'LAB' | 'LIST' | 'DETAIL' | 'WRITE' | 'EDIT' | 'LOGIN';

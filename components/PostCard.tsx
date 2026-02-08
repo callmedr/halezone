@@ -9,6 +9,8 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
+  const LOGO_IMAGE_URL = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/hale_logo.PNG"; 
+  
   const formattedDate = new Date(post.created_at).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -26,16 +28,30 @@ const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
       onClick={onClick}
     >
       <div className="relative aspect-[16/9] md:aspect-[16/10] overflow-hidden rounded-[2rem] md:rounded-lg mb-5 md:mb-3 bg-white shadow-md border border-emerald-50/50 flex items-center justify-center">
+        {/* Verified Badge */}
+        <div className="absolute top-4 left-4 md:top-3 md:left-3 z-20 flex items-center bg-white/90 backdrop-blur-md px-3.5 py-1.5 md:px-2.5 md:py-1 rounded-full border border-emerald-50/50 shadow-sm transition-transform duration-500 group-hover:scale-105">
+          <img 
+            src={LOGO_IMAGE_URL} 
+            className="w-4 h-4 md:w-3 md:h-3 mr-2 object-contain" 
+            alt="H" 
+          />
+          <span className="text-[10px] md:text-[8px] font-black text-emerald-900 uppercase tracking-[0.2em]">Verified</span>
+        </div>
+
         <div className="absolute inset-0 bg-emerald-950/0 group-hover:bg-emerald-950/5 transition-all duration-500 z-10"></div>
         {post.image_url ? (
           <img 
             src={post.image_url} 
             alt={post.title}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-emerald-100 bg-[#fbfcfd] group-hover:bg-lime-50/30 transition-colors">
-            <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-emerald-100/60 uppercase">Halezone Archive</span>
+             <div className="relative flex flex-col items-center">
+               <img src={LOGO_IMAGE_URL} className="w-10 h-10 md:w-6 md:h-6 opacity-10 mb-2 grayscale" alt="Background Logo" />
+               <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-emerald-100/60 uppercase">Halezone Archive</span>
+             </div>
           </div>
         )}
         <div className="absolute top-4 right-4 md:top-2.5 md:right-2.5 z-20">

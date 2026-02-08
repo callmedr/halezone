@@ -23,16 +23,31 @@ import {
   Users,
   LogOut,
   Compass,
-  ChevronDown,
-  ChevronUp,
   Clock,
   BookOpen,
   CheckCircle,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ArrowRight,
+  Award,
+  Microscope,
+  ChevronDown,
+  ChevronUp,
+  Mail,
+  Share2
 } from 'lucide-react';
 
+const DOCTOR_PHOTO_URL = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/gateway.PNG";
+const LOGO_IMAGE_URL = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/hale_logo.PNG";
+const POSTS_PER_PAGE = 10;
+
+// 1. 게시글 하단 '인장(Seal)' 크기 설정
+const FOOTER_SEAL_SIZE = "w-80 h-80"; 
+
+// 2. 메인 화면 최하단 '푸터 로고' 크기 설정
+const MAIN_FOOTER_LOGO_SIZE = "w-80 h-80";
+
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewState>('LIST');
+  const [view, setView] = useState<ViewState>('MAIN');
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -43,44 +58,64 @@ const App: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
-  // 연구 의뢰 관련 상태
-  const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [requestContent, setRequestContent] = useState('');
   const [requests, setRequests] = useState<BlogRequest[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [linkingRequestId, setLinkingRequestId] = useState<any | null>(null);
 
-  // 스크롤 위치 기억을 위한 ref
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showTopButton, setShowTopButton] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      setScrollProgress(scrolled);
+      setShowTopButton(winScroll > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const visiblePosts = filteredPosts.slice(0, visibleCount);
   const scrollPosRef = useRef<number>(0);
 
-  // 토스트 자동 소멸 로직
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => {
         setToast(null);
-      }, 3000); // 3초 후 삭제
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  useEffect(() => {
+    setVisibleCount(POSTS_PER_PAGE);
+  }, [searchQuery]);
 
   const navigateToPost = (id: any) => {
     scrollPosRef.current = window.scrollY;
     window.location.hash = `/post/${id}`;
   };
 
-  const navigateToHome = () => {
-    window.location.hash = '/';
-  };
+  const navigateToHome = () => { window.location.hash = '/'; };
+  const navigateToLab = () => { window.location.hash = '/lab'; };
+  const navigateToArchive = () => { window.location.hash = '/archive'; };
 
   const handleRouting = useCallback(() => {
     const path = window.location.hash.slice(1);
-    
     if (path.startsWith('/post/')) {
       const id = decodeURIComponent(path.replace('/post/', ''));
       const foundPost = posts.find(p => String(p.id) === id);
-      
       if (foundPost) {
         setSelectedPost(foundPost);
         setView('DETAIL');
@@ -89,8 +124,14 @@ const App: React.FC = () => {
         setSelectedPost(null);
         setView('DETAIL'); 
       }
-    } else {
+    } else if (path === '/lab') {
+      setView('LAB');
+      setSelectedPost(null);
+    } else if (path === '/archive') {
       setView('LIST');
+      setSelectedPost(null);
+    } else {
+      setView('MAIN');
       setSelectedPost(null);
     }
   }, [posts, isInitialLoading]);
@@ -104,19 +145,19 @@ const App: React.FC = () => {
   useEffect(() => {
     if (view === 'LIST' && !isInitialLoading) {
       const timeout = setTimeout(() => {
-        window.scrollTo({
-          top: scrollPosRef.current,
-          behavior: 'instant'
-        });
+        window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' });
       }, 10);
       return () => clearTimeout(timeout);
+    } else if (view === 'MAIN' || view === 'LAB') {
+      window.scrollTo(0, 0);
     }
   }, [view, isInitialLoading]);
 
+  // Social Card & Meta Tag Optimization
   useEffect(() => {
     const baseTitle = "Halezone: 숨결의 온도";
-    const defaultDesc = "복잡한 의학적 지식을 데이터 기반으로 가장 명료하게 해석하는 전문 의학 인사이트 블로그입니다.";
-    const defaultImg = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/hale_logo.PNG";
+    const defaultDesc = "서울대병원 산부인과 전임의 박영수가 데이터 기반으로 해석하는 전문 의학 인사이트 블로그입니다.";
+    const defaultImg = LOGO_IMAGE_URL;
     const baseUrl = window.location.origin + window.location.pathname;
 
     let newTitle = baseTitle;
@@ -125,32 +166,28 @@ const App: React.FC = () => {
     let canonicalUrl = baseUrl + window.location.hash;
 
     if (view === 'DETAIL' && selectedPost) {
-      newTitle = `${selectedPost.title} | Halezone`;
-      newDesc = selectedPost.content
-        .replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .substring(0, 160) + "...";
-      
-      if (selectedPost.image_url) {
-        newImg = selectedPost.image_url;
-      }
+      newTitle = `[Halezone Insight] ${selectedPost.title}`;
+      const plainContent = selectedPost.content.replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '').replace(/\s+/g, ' ').trim();
+      newDesc = plainContent.substring(0, 160) + (plainContent.length > 160 ? "..." : "");
+      if (selectedPost.image_url) newImg = selectedPost.image_url;
+    } else if (view === 'LAB') {
+      newTitle = "의학 연구소 | Halezone";
+      newDesc = "박영수 전문의에게 궁금한 의학 정보를 직접 의뢰하세요. 최신 논문을 바탕으로 답변해 드립니다.";
+    } else if (view === 'LIST') {
+      newTitle = "기록보관소 | Halezone";
+      newDesc = "박영수 전문의가 정립한 명료한 의학 지식의 아카이브입니다.";
     }
 
     document.title = newTitle;
-
     const updateMeta = (selector: string, content: string) => {
       const el = document.querySelector(selector);
       if (el) el.setAttribute('content', content);
     };
-
     updateMeta('meta[name="description"]', newDesc);
     updateMeta('meta[property="og:title"]', newTitle);
     updateMeta('meta[property="og:description"]', newDesc);
     updateMeta('meta[property="og:image"]', newImg);
-    updateMeta('meta[name="twitter:title"]', newTitle);
-    updateMeta('meta[name="twitter:description"]', newDesc);
-    updateMeta('meta[name="twitter:image"]', newImg);
+    updateMeta('meta[property="og:url"]', canonicalUrl);
 
     let canonicalTag = document.querySelector('link[rel="canonical"]');
     if (!canonicalTag) {
@@ -159,7 +196,6 @@ const App: React.FC = () => {
       document.head.appendChild(canonicalTag);
     }
     canonicalTag.setAttribute('href', canonicalUrl);
-
   }, [view, selectedPost]);
 
   useEffect(() => {
@@ -168,16 +204,13 @@ const App: React.FC = () => {
       setIsAdmin(session?.user?.email === ADMIN_EMAIL);
     };
     checkUser();
-    
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAdmin(session?.user?.email === ADMIN_EMAIL);
     });
-
     const recordVisit = async () => {
       try { await supabase.from('visitor_logs').insert([{}]); } catch (e) {}
     };
     recordVisit();
-
     return () => authListener.subscription.unsubscribe();
   }, []);
 
@@ -186,10 +219,7 @@ const App: React.FC = () => {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { count } = await supabase
-        .from('visitor_logs')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
+      const { count } = await supabase.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString());
       setVisitorCount(count);
     } catch (e) {}
   }, [isAdmin]);
@@ -201,26 +231,15 @@ const App: React.FC = () => {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('blog')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error: fetchError } = await supabase.from('blog').select('*').order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
       setPosts(data || []);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsInitialLoading(false);
-      setLoading(false);
-    }
+    } catch (err: any) { setError(err.message); } finally { setIsInitialLoading(false); setLoading(false); }
   }, []);
 
   const fetchRequests = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('blog_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('blog_requests').select('*').order('created_at', { ascending: false });
       if (!error && data) setRequests(data);
     } catch (e) {}
   }, []);
@@ -234,7 +253,26 @@ const App: React.FC = () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
     navigateToHome();
-    setView('LIST');
+  };
+
+  // Smart Sharing Function
+  const handleShare = async () => {
+    const shareData = {
+      title: document.title,
+      text: view === 'DETAIL' ? `[Halezone] 박영수 전문의의 의학 통찰: ${selectedPost?.title}` : "전문의 박영수의 의학 인사이트 블로그, Halezone",
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setToast({ message: '통찰의 링크가 클립보드에 복사되었습니다.', type: 'success' });
+      }
+    } catch (err) {
+      // User cancelled
+    }
   };
 
   const handleRequestSubmit = async () => {
@@ -248,48 +286,31 @@ const App: React.FC = () => {
       fetchRequests(); 
     } catch (err) {
       setToast({ message: '의뢰 실패. 잠시 후 다시 시도해주세요.', type: 'error' });
-    } finally {
-      setIsSubmittingRequest(false);
-    }
+    } finally { setIsSubmittingRequest(false); }
   };
 
   const updateRequestStatus = async (requestId: any, currentStatus: RequestStatus) => {
     if (!isAdmin) return;
-    
     let nextStatus: RequestStatus;
     if (currentStatus === 'PENDING') nextStatus = 'REVIEWING';
-    else if (currentStatus === 'REVIEWING') {
-      setLinkingRequestId(requestId);
-      return; // COMPLETED는 포스트 선택 후 업데이트
-    }
+    else if (currentStatus === 'REVIEWING') { setLinkingRequestId(requestId); return; }
     else nextStatus = 'PENDING';
-
     try {
-      const { error } = await supabase
-        .from('blog_requests')
-        .update({ status: nextStatus, post_id: nextStatus === 'PENDING' ? null : undefined })
-        .eq('id', requestId);
+      const { error } = await supabase.from('blog_requests').update({ status: nextStatus, post_id: nextStatus === 'PENDING' ? null : undefined }).eq('id', requestId);
       if (error) throw error;
       fetchRequests();
-    } catch (e) {
-      setToast({ message: '상태 변경 실패', type: 'error' });
-    }
+    } catch (e) { setToast({ message: '상태 변경 실패', type: 'error' }); }
   };
 
   const handleLinkPost = async (postId: any) => {
     if (!linkingRequestId) return;
     try {
-      const { error } = await supabase
-        .from('blog_requests')
-        .update({ status: 'COMPLETED', post_id: postId || null })
-        .eq('id', linkingRequestId);
+      const { error } = await supabase.from('blog_requests').update({ status: 'COMPLETED', post_id: postId || null }).eq('id', linkingRequestId);
       if (error) throw error;
       setToast({ message: '연구 결과가 연결되었습니다.', type: 'success' });
       setLinkingRequestId(null);
       fetchRequests();
-    } catch (e) {
-      setToast({ message: '연결 실패', type: 'error' });
-    }
+    } catch (e) { setToast({ message: '연결 실패', type: 'error' }); }
   };
 
   const deleteRequest = async (requestId: any) => {
@@ -300,13 +321,11 @@ const App: React.FC = () => {
       if (error) throw error;
       setRequests(prev => prev.filter(r => r.id !== requestId));
       setToast({ message: '의뢰가 삭제되었습니다.', type: 'success' });
-    } catch (e) {
-      setToast({ message: '삭제 실패', type: 'error' });
-    }
+    } catch (e) { setToast({ message: '삭제 실패', type: 'error' }); }
   };
 
   const getStatusInfo = (status: RequestStatus) => {
-    const iconClass = "w-3 h-3 md:w-3 md:h-3 shrink-0";
+    const iconClass = "w-3 h-3 shrink-0";
     switch (status) {
       case 'PENDING': return { text: '연구 대기', icon: <Clock className={iconClass} />, color: 'text-gray-400 bg-gray-50 border-gray-100' };
       case 'REVIEWING': return { text: '문헌 조사', icon: <BookOpen className={iconClass} />, color: 'text-blue-500 bg-blue-50 border-blue-100' };
@@ -323,313 +342,385 @@ const App: React.FC = () => {
       setPosts(prev => prev.filter(p => p.id !== selectedPost.id));
       setToast({ message: '기록이 삭제되었습니다.', type: 'success' });
       setShowDeleteModal(false);
-      navigateToHome();
-    } catch (err: any) {
-      setToast({ message: '삭제 실패', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
+      navigateToArchive();
+    } catch (err: any) { setToast({ message: '삭제 실패', type: 'error' }); } finally { setLoading(false); }
+  };
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + POSTS_PER_PAGE);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const renderStyledContent = (content: string, imageUrl: string | null) => {
     const ImageComponent = () => imageUrl ? (
-      <div className="relative group my-10 md:my-8 animate-in fade-in zoom-in duration-1000">
+      <div className="relative group my-8 md:my-6 animate-in fade-in zoom-in duration-1000">
         <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/30 to-lime-100/30 rounded-[2rem] blur-2xl opacity-50"></div>
-        <img src={imageUrl} className="relative w-full rounded-[2rem] md:rounded-lg shadow-md border border-emerald-50 object-cover max-h-[450px] md:max-h-[550px]" alt="Post content" />
+        <img 
+          src={imageUrl} 
+          loading="lazy"
+          className="relative w-full rounded-[1.5rem] md:rounded-lg shadow-md border border-emerald-50 object-cover max-h-[450px] md:max-h-[550px]" 
+          alt="Post content" 
+        />
       </div>
     ) : null;
-
     const parts = content.split(/(\[IMAGE\]|\[HR\]|\[QUOTE\].*?\[\/QUOTE\]|\[HL\].*?\[\/HL\]|\[SUB\].*?\[\/SUB\])/gs);
-
     return (
-      <div className="serif text-[1.35rem] md:text-[1.2rem] leading-[1.8] md:leading-[1.65] text-gray-700 space-y-7 md:space-y-4">
+      <div className="serif text-[1.25rem] md:text-[1.1rem] leading-[1.8] md:leading-[1.65] text-gray-700 space-y-6 md:space-y-4">
         {parts.map((part, index) => {
           if (part === '[IMAGE]') return <ImageComponent key={index} />;
-          if (part === '[HR]') {
-            return (
-              <div key={index} className="relative flex items-center justify-center my-14 md:my-8 py-5 md:py-2.5 overflow-hidden">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-200 to-transparent"></div></div>
-                <div className="relative bg-white px-6"><Leaf size={24} className="text-emerald-400 fill-emerald-50 transform -rotate-12 md:w-3.5 md:h-3.5" /></div>
-              </div>
-            );
-          }
-          if (part.startsWith('[QUOTE]')) {
-            const text = part.replace(/\[\/?QUOTE\]/g, '');
-            return <blockquote key={index} className="my-10 md:my-5 pl-7 md:pl-4 pr-5 md:pr-2.5 py-8 md:py-4 bg-emerald-50/40 border-l-[6px] md:border-l-[2px] border-emerald-300 rounded-r-[2rem] md:rounded-r-md italic text-emerald-900/80 whitespace-pre-wrap text-[1.25rem] md:text-[1.1rem] leading-relaxed">{text}</blockquote>;
-          }
-          if (part.startsWith('[HL]')) return <mark key={index} className="bg-emerald-100/60 text-emerald-900 px-1.5 rounded-sm whitespace-pre-wrap">{part.replace(/\[\/?HL\]/g, '')}</mark>;
-          if (part.startsWith('[SUB]')) return <h3 key={index} className="text-[1.7rem] md:text-[1.5rem] font-bold text-gray-900 mt-14 md:mt-6 mb-6 md:mb-3 pt-8 md:pt-3 border-t-2 border-emerald-50 whitespace-pre-wrap leading-tight">{part.replace(/\[\/?SUB\]/g, '')}</h3>;
+          if (part === '[HR]') return <div key={index} className="relative flex items-center justify-center my-10 md:my-6 py-4 md:py-2 overflow-hidden"><div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-200 to-transparent"></div></div><div className="relative bg-white px-6"><Leaf size={20} className="text-emerald-400 fill-emerald-50 transform -rotate-12 md:w-3.5 md:h-3.5" /></div></div>;
+          if (part.startsWith('[QUOTE]')) return <blockquote key={index} className="my-8 md:my-4 pl-6 md:pl-4 pr-5 md:pr-2.5 py-6 md:py-3 bg-emerald-50/40 border-l-[4px] border-emerald-300 rounded-r-2xl md:rounded-r-md italic text-emerald-900/80 whitespace-pre-wrap text-[1.15rem] md:text-[1rem] leading-relaxed">{part.replace(/\[\/?QUOTE\]/g, '')}</blockquote>;
+          if (part.startsWith('[HL]')) return <mark key={index} className="bg-emerald-100/60 text-emerald-900 px-1 rounded-sm whitespace-pre-wrap">{part.replace(/\[\/?HL\]/g, '')}</mark>;
+          if (part.startsWith('[SUB]')) return <h3 key={index} className="text-[1.5rem] md:text-[1.3rem] font-bold text-gray-900 mt-10 md:mt-5 mb-5 md:mb-2.5 pt-6 md:pt-2 border-t border-emerald-50 whitespace-pre-wrap leading-tight">{part.replace(/\[\/?SUB\]/g, '')}</h3>;
           return <span key={index} className="whitespace-pre-wrap">{part}</span>;
         })}
         {!content.includes('[IMAGE]') && imageUrl && <ImageComponent />}
+        
+        <div className="pt-20 pb-10 flex flex-col items-center">
+           <div className="w-16 h-1 bg-emerald-100 rounded-full mb-8"></div>
+           <div className="relative group">
+              <div className="absolute inset-0 bg-emerald-200 rounded-full blur-2xl opacity-30 group-hover:scale-150 transition-transform duration-700"></div>
+              <img 
+                src={LOGO_IMAGE_URL} 
+                className={`${FOOTER_SEAL_SIZE} relative z-10 transition-all duration-500 cursor-help group-hover:scale-110`} 
+                alt="Halezone Seal" 
+              />
+           </div>
+           <p className="mt-4 text-[10px] font-black text-emerald-900/60 uppercase tracking-[0.6em]">Official Record · Halezone</p>
+        </div>
       </div>
     );
   };
 
-  const filteredPosts = posts.filter(post => {
-    if (!searchQuery.trim()) return true;
-    const lowerQuery = searchQuery.toLowerCase();
-    const cleanContent = post.content.replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '').toLowerCase();
-    return post.title.toLowerCase().includes(lowerQuery) || cleanContent.includes(lowerQuery);
-  });
-
   const renderContent = () => {
-    if (isInitialLoading) {
+    if (isInitialLoading) return (
+      <div className="flex flex-col items-center justify-center py-48 animate-in fade-in duration-700">
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-emerald-100 rounded-full blur-2xl animate-pulse opacity-40"></div>
+          <img 
+            src={LOGO_IMAGE_URL} 
+            className="w-24 h-24 relative z-10 animate-pulse-gentle object-contain" 
+            alt="Halezone Loading" 
+          />
+        </div>
+        <p className="text-emerald-800/40 text-[10px] tracking-[0.5em] uppercase font-black">Halezone Insight</p>
+      </div>
+    );
+
+    if (view === 'MAIN') {
       return (
-        <div className="flex flex-col items-center justify-center py-48 md:py-24">
-          <Loader2 className="animate-spin text-emerald-200 mb-8" size={56} />
-          <p className="text-gray-300 text-lg md:text-[10px] tracking-[0.4em] uppercase font-black">Resonating...</p>
+        <div className="animate-in fade-in duration-1000 py-10 md:py-16">
+          <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+            <div className="order-2 lg:order-1 space-y-8">
+              <div className="inline-flex items-center space-x-3 px-4 py-2 bg-emerald-50 rounded-full">
+                <Award size={16} className="text-emerald-500" />
+                <span className="text-emerald-700 font-black text-[10px] uppercase tracking-widest">Medical Insight Specialist</span>
+              </div>
+              <h1 className="serif text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-relaxed">
+                서울대의대 박영수 전문의가<br/>
+                <span className="text-emerald-600">의학의 숨결</span>을 해석합니다.
+              </h1>
+              <p className="text-gray-500 text-lg md:text-xl font-light leading-relaxed max-w-xl">
+                서울대학교 의과대학을 졸업하고 서울대병원 산부인과에서 임상을 수련한 박영수 전문의입니다. 
+                복잡한 데이터를 명료한 지혜로 바꾸어 당신의 일상을 지킵니다.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-4">
+                <div className="flex items-center space-x-2 text-gray-400">
+                  <div className="w-1.5 h-1.5 bg-emerald-300 rounded-full"></div>
+                  <span className="text-xs font-bold uppercase tracking-wider">SNU Medical College</span>
+                </div>
+                <div className="flex items-center space-x-2 text-gray-400">
+                  <div className="w-1.5 h-1.5 bg-emerald-300 rounded-full"></div>
+                  <span className="text-xs font-bold uppercase tracking-wider">SNU Hospital OBGYN</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-md aspect-square">
+                <div className="absolute -inset-10 bg-gradient-to-br from-emerald-100/50 to-lime-100/50 rounded-full blur-[80px] opacity-60"></div>
+                <div className="relative w-full h-full rounded-[3rem] overflow-hidden shadow-2xl border-[12px] border-white transform rotate-2">
+                  <img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" alt="박영수 전문의" />
+                </div>
+                <div className="absolute -bottom-6 -left-6 bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-emerald-50 animate-bounce-slow">
+                   <Quote className="text-emerald-200 mb-2" size={24} />
+                   <p className="serif text-sm italic text-gray-600">"가장 명료한 지식은<br/>가장 따뜻한 위로가 됩니다."</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-32">
+            <div 
+              onClick={navigateToLab}
+              className="group relative h-80 rounded-[3rem] bg-emerald-900 overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-2 transition-all duration-500"
+            >
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_white_0%,_transparent_70%)]"></div>
+              </div>
+              <div className="relative h-full flex flex-col items-center justify-center p-12 text-center text-white">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-8 backdrop-blur-md group-hover:scale-110 transition-transform duration-500">
+                   <Microscope size={32} className="text-emerald-300" />
+                </div>
+                <h3 className="serif text-3xl font-bold mb-4">연구소</h3>
+                <p className="text-emerald-100/60 font-light text-sm mb-10 leading-relaxed">박영수 전문의에게<br/>의학적 고민을 직접 의뢰하세요</p>
+                <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-300">
+                   <span>Enter Lab</span>
+                   <ArrowRight size={14} />
+                </div>
+              </div>
+            </div>
+
+            <div 
+              onClick={navigateToArchive}
+              className="group relative h-80 rounded-[3rem] bg-white border border-emerald-100 overflow-hidden cursor-pointer shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-white"></div>
+              <div className="relative h-full flex flex-col items-center justify-center p-12 text-center">
+                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                   <BookOpen size={32} className="text-emerald-600" />
+                </div>
+                <h3 className="serif text-3xl font-bold text-gray-900 mb-4">기록보관소</h3>
+                <p className="text-gray-400 font-light text-sm mb-10 leading-relaxed">최신 의학 문헌을 바탕으로<br/>정립된 지식의 아카이브</p>
+                <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">
+                   <span>Open Archive</span>
+                   <ArrowRight size={14} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer className="relative -mx-8 md:-mx-12 px-8 md:px-12 py-24 bg-emerald-50/30 rounded-t-[4rem] border-t border-emerald-100 flex flex-col items-center text-center">
+             <div className="relative mb-10 group">
+                <div className="absolute inset-0 bg-emerald-200 rounded-full blur-3xl opacity-20 group-hover:scale-125 transition-transform duration-1000"></div>
+                <img src={LOGO_IMAGE_URL} className={`${MAIN_FOOTER_LOGO_SIZE} relative z-10 object-contain`} alt="Halezone Logo Footer" />
+             </div>
+             <h2 className="serif text-2xl md:text-3xl font-bold text-emerald-900 mb-4">가장 명료한 지식은<br className="md:hidden" /> 가장 따뜻한 위로가 됩니다</h2>
+             <p className="text-gray-400 font-light mb-12 max-w-md mx-auto text-sm leading-relaxed">박영수 전문의는 의학적 전문성이 당신의 일상에 스며들어 더 건강한 내일을 만들 수 있도록 매일 연구하고 기록합니다.</p>
+             
+             <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6 mb-16">
+                <a href="mailto:callmedoctorpark@gmail.com" className="group flex items-center space-x-4 bg-white px-8 py-4 rounded-full shadow-lg border border-emerald-50 hover:border-emerald-200 transition-all hover:-translate-y-1">
+                   <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                      <Mail size={18} />
+                   </div>
+                   <div className="text-left">
+                      <p className="text-[10px] font-black text-emerald-900/40 uppercase tracking-widest leading-none mb-1">Contact Inquiry</p>
+                      <p className="text-sm font-bold text-emerald-900">callmedoctorpark@gmail.com</p>
+                   </div>
+                </a>
+                
+                {/* Main Page Branding Share Button */}
+                <button 
+                  onClick={handleShare}
+                  className="group flex items-center space-x-4 bg-emerald-900 px-8 py-4 rounded-full shadow-lg border border-emerald-800 hover:bg-black transition-all hover:-translate-y-1"
+                >
+                   <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-emerald-200 group-hover:text-white transition-colors">
+                      <Share2 size={18} />
+                   </div>
+                   <div className="text-left text-white">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">Spread Insight</p>
+                      <p className="text-sm font-bold">Halezone 공유하기</p>
+                   </div>
+                </button>
+             </div>
+
+             <div className="w-16 h-0.5 bg-emerald-100 rounded-full mb-8"></div>
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-emerald-900/60 uppercase tracking-[0.5em]">© {new Date().getFullYear()} HALEZONE · ALL RIGHTS RESERVED</p>
+                <p className="text-[9px] text-gray-300 font-medium">Design & Content by Dr. Youngsoo Park</p>
+             </div>
+          </footer>
+        </div>
+      );
+    }
+
+    if (view === 'LAB') {
+      return (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 py-10">
+          <div className="max-w-[42rem] mx-auto text-center mb-16">
+            <div className="inline-flex items-center space-x-3 px-4 py-2 bg-emerald-50 rounded-full mb-6">
+              <Compass size={16} className="text-emerald-500" />
+              <span className="text-emerald-700 font-black text-[10px] uppercase tracking-widest">Medical Insight Lab</span>
+            </div>
+            <h2 className="serif text-4xl md:text-5xl font-bold text-gray-900 mb-6">무엇을 대신 연구해드릴까요?</h2>
+            <p className="text-gray-400 text-lg md:text-base font-light max-w-lg mx-auto leading-relaxed">
+              박영수 전문의가 최신 의학 논문과 공신력 있는 데이터를 기반으로,<br/>당신의 건강한 일상을 위한 명료한 답을 찾아드립니다.
+            </p>
+          </div>
+          <div className="max-w-[42rem] mx-auto">
+            <div className="bg-white border border-emerald-100 rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-emerald-100/50 mb-16">
+              <textarea 
+                className="w-full h-48 md:h-40 bg-emerald-50/20 border border-emerald-50 rounded-[1.5rem] p-8 md:p-6 focus:outline-none focus:ring-2 focus:ring-emerald-200 serif text-xl md:text-base text-gray-800 placeholder:text-gray-300 resize-none transition-all mb-8"
+                placeholder="궁금한 증상, 약물 정보, 혹은 최신 의료 소식 등 무엇이든 적어주세요."
+                value={requestContent}
+                onChange={(e) => setRequestContent(e.target.value)}
+              />
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2 text-emerald-400">
+                  <Leaf size={16} />
+                  <span className="text-[11px] font-black uppercase tracking-widest">Evidence-Based Clinical Analysis</span>
+                </div>
+                <button 
+                  onClick={handleRequestSubmit}
+                  disabled={isSubmittingRequest || !requestContent.trim()}
+                  className="flex items-center space-x-3 bg-emerald-900 text-white px-10 py-5 rounded-full font-black text-sm uppercase tracking-widest shadow-lg hover:bg-black disabled:bg-emerald-200 transition-all hover:scale-105"
+                >
+                  {isSubmittingRequest ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  <span>연구 의뢰하기</span>
+                </button>
+              </div>
+            </div>
+            {requests.length > 0 && (
+              <div className="animate-in fade-in duration-1000">
+                <div className="flex items-center justify-between mb-8 px-2">
+                  <h4 className="serif text-xl font-bold text-emerald-900">진행 중인 연구 브리핑</h4>
+                  <div className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Live Updates</div>
+                </div>
+                <div className="space-y-4">
+                  {requests.map((req) => {
+                    const status = getStatusInfo(req.status);
+                    return (
+                      <div key={req.id} onClick={() => !isAdmin && req.post_id && navigateToPost(req.post_id)} className={`group flex items-center justify-between p-6 rounded-3xl border bg-white transition-all ${!isAdmin && req.post_id ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 border-emerald-50' : 'cursor-default border-gray-50'}`}>
+                        <div className="flex-1 pr-6"><p className="text-gray-700 text-base md:text-sm line-clamp-2 font-light leading-relaxed mb-1">{req.content}</p><span className="text-[10px] text-gray-300 font-black tracking-tighter uppercase">ID: {String(req.id).slice(0, 8)}</span></div>
+                        <div className="flex items-center space-x-3 shrink-0">
+                          <button onClick={(e) => { e.stopPropagation(); if(isAdmin) updateRequestStatus(req.id, req.status); }} className={`flex items-center space-x-2 px-4 py-2 rounded-full border text-[11px] font-black transition-all ${status.color}`}>
+                            {status.icon}<span className="uppercase tracking-widest">{status.text}</span>
+                          </button>
+                          {isAdmin && <button onClick={(e) => { e.stopPropagation(); deleteRequest(req.id); }} className="p-2 text-gray-200 hover:text-red-400"><X size={16} /></button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
 
     if (view === 'LIST') {
       return (
-        <div className="animate-in fade-in duration-1000">
-          <div className="max-w-[42rem] mx-auto mb-8 md:mb-6 relative group px-4">
-            <div className="absolute inset-0 bg-emerald-100/20 blur-[3.5rem] md:blur-[2rem] rounded-full group-focus-within:bg-emerald-200/50 transition-all duration-500 pointer-events-none"></div>
-            <div className="relative flex items-center bg-white border border-emerald-50 rounded-[2rem] md:rounded-lg px-7 py-5 md:px-3.5 md:py-2 shadow-lg focus-within:shadow-xl focus-within:border-emerald-300 transition-all duration-300 z-10">
-              <Search size={24} className="text-emerald-400 mr-5 md:mr-2 shrink-0 md:w-3.5 md:h-3.5" />
-              <input type="text" placeholder="어떤 숨결을 찾으시나요?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-300 text-base md:text-[11px] font-light" />
-              {searchQuery && <button onClick={() => setSearchQuery('')} className="p-2 md:p-0.5 text-emerald-200 hover:text-emerald-500"><X size={20} className="md:w-3 md:h-3" /></button>}
+        <div className="animate-in fade-in duration-700 py-10">
+          <div className="max-w-[42rem] mx-auto text-center mb-16">
+            <div className="inline-flex items-center space-x-3 px-4 py-2 bg-lime-50 rounded-full mb-6"><BookOpen size={16} className="text-lime-600" /><span className="text-lime-700 font-black text-[10px] uppercase tracking-widest">Medical Insight Archive</span></div>
+            <h2 className="serif text-4xl md:text-5xl font-bold text-gray-900 mb-6">지식의 기록</h2>
+            <p className="text-gray-400 text-lg md:text-base font-light max-w-lg mx-auto leading-relaxed">박영수 전문의가 정돈한 명료한 통찰을 만나보세요.</p>
+          </div>
+          <div className="max-w-[42rem] mx-auto mb-16 relative group">
+            <div className="relative flex items-center bg-white border border-emerald-50 rounded-full px-8 py-5 shadow-xl focus-within:shadow-2xl focus-within:border-emerald-300 transition-all duration-300 z-10">
+              <Search size={22} className="text-emerald-400 mr-5" />
+              <input type="text" placeholder="어떤 숨결을 찾으시나요?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-300 text-lg font-light" />
+              {searchQuery && <button onClick={() => setSearchQuery('')} className="p-2 text-emerald-200"><X size={20} /></button>}
             </div>
             {isAdmin && (
-              <div className="mt-5 md:mt-3 flex flex-col items-center space-y-4 md:space-y-2 relative z-20">
-                <button onClick={handleLogout} className="flex items-center space-x-2 px-6 py-2.5 md:px-3 md:py-1 text-[13px] md:text-[9px] font-black tracking-tighter text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all border border-transparent hover:border-emerald-100/50 uppercase">
-                  <LogOut size={15} className="md:w-3 md:h-3" /><span>Admin Logout</span>
-                </button>
-                {visitorCount !== null && (
-                  <div className="flex items-center space-x-2.5 md:space-x-1.5 px-6 py-2.5 md:px-3 md:py-1 bg-emerald-50/40 rounded-full border border-emerald-100/30">
-                    <Users size={16} className="text-emerald-400 md:w-3 md:h-3" />
-                    <span className="serif text-[12px] md:text-[9px] font-bold text-emerald-800">오늘의 숨결: <span className="text-emerald-500">{visitorCount}</span></span>
-                  </div>
-                )}
+              <div className="mt-8 flex flex-col items-center space-y-4">
+                <button onClick={handleLogout} className="flex items-center space-x-2 px-6 py-2 text-[11px] font-black tracking-widest text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all border border-transparent hover:border-emerald-100 uppercase"><LogOut size={14} /><span>Admin Logout</span></button>
+                {visitorCount !== null && <div className="flex items-center space-x-2 px-6 py-2 bg-emerald-50/40 rounded-full border border-emerald-100/30"><Users size={14} className="text-emerald-400" /><span className="serif text-[11px] font-bold text-emerald-800">Today's Visits: <span className="text-emerald-500">{visitorCount}</span></span></div>}
               </div>
             )}
           </div>
 
-          {!searchQuery && (
-            <div className="max-w-[42rem] mx-auto mb-16 md:mb-10 px-4">
-              <div className={`relative bg-emerald-50/30 border-2 border-dashed border-emerald-100 rounded-[2.5rem] md:rounded-xl overflow-hidden transition-all duration-500 ${isRequestOpen ? 'py-10 md:py-6 px-10 md:px-6' : 'py-6 md:py-3 px-8 md:px-4'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-5 md:space-x-2.5">
-                    <div className="w-14 h-14 md:w-8 md:h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                      <Leaf size={24} className="text-emerald-400 md:w-3.5 md:h-3.5" />
-                    </div>
-                    <div>
-                      <p className="serif text-lg md:text-[11px] font-bold text-emerald-900 leading-tight">궁금한 의학 지식, 대신 연구해드립니다</p>
-                      {!isRequestOpen && <p className="text-emerald-500/70 text-sm md:text-[9px] mt-1.5 md:mt-0.5">최신 논문과 데이터를 기반으로 명료한 답을 드립니다.</p>}
-                    </div>
-                  </div>
+          {visiblePosts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
+                {visiblePosts.map(post => <PostCard key={post.id} post={post} onClick={() => navigateToPost(post.id)} />)}
+              </div>
+              
+              {visibleCount < filteredPosts.length && (
+                <div className="mt-24 flex justify-center animate-in fade-in slide-in-from-bottom-2">
                   <button 
-                    onClick={() => setIsRequestOpen(!isRequestOpen)}
-                    className="p-3 md:p-1.5 bg-white rounded-full shadow-md text-emerald-600 hover:text-emerald-900 transition-colors"
+                    onClick={handleLoadMore}
+                    className="group relative flex items-center space-x-4 bg-white border border-emerald-100 px-12 py-5 rounded-full shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                   >
-                    {isRequestOpen ? <ChevronUp size={24} className="md:w-3.5 md:h-3.5" /> : <ChevronDown size={24} className="md:w-3.5 md:h-3.5" />}
+                    <div className="absolute inset-0 rounded-full bg-emerald-50/30 scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+                    <span className="relative z-10 text-[11px] font-black text-emerald-900 uppercase tracking-[0.3em]">기록 더 불러오기</span>
+                    <ChevronDown size={18} className="relative z-10 text-emerald-400 group-hover:translate-y-1 transition-transform" />
                   </button>
                 </div>
-
-                {isRequestOpen && (
-                  <div className="mt-10 md:mt-5 animate-in slide-in-from-top-4 fade-in duration-500">
-                    <textarea 
-                      className="w-full h-40 md:h-24 bg-white/60 border border-emerald-100 rounded-[1.5rem] md:rounded-lg p-7 md:p-4 focus:outline-none focus:ring-2 focus:ring-emerald-200 serif text-lg md:text-xs text-gray-800 placeholder:text-gray-300 resize-none transition-all"
-                      placeholder="건강에 관하여 무엇이든 물어보세요."
-                      value={requestContent}
-                      onChange={(e) => setRequestContent(e.target.value)}
-                    />
-                    <div className="mt-6 md:mt-3 flex justify-end">
-                      <button 
-                        onClick={handleRequestSubmit}
-                        disabled={isSubmittingRequest || !requestContent.trim()}
-                        className="flex items-center space-x-3.5 md:space-x-2 bg-emerald-900 text-white px-10 py-5 md:px-5 md:py-2.5 rounded-full font-black text-[13px] md:text-[9px] uppercase tracking-widest shadow-lg hover:bg-black disabled:bg-emerald-200 transition-all"
-                      >
-                        {isSubmittingRequest ? <Loader2 size={18} className="animate-spin md:w-3 md:h-3" /> : <Send size={18} className="md:w-3 md:h-3" />}
-                        <span>연구 의뢰하기</span>
-                      </button>
-                    </div>
-
-                    {requests.length > 0 && (
-                      <div className="mt-12 md:mt-8 pt-10 md:pt-6 border-t border-emerald-100/50">
-                        <h4 className="serif text-base md:text-[10px] font-bold text-emerald-900/50 mb-6 md:mb-3 flex items-center space-x-2.5 md:space-x-1.5">
-                          <Compass size={16} className="md:w-3" />
-                          <span>현재 연구 진행 상황</span>
-                        </h4>
-                        <div className="space-y-4 md:space-y-2">
-                          {requests.map((req) => {
-                            const status = getStatusInfo(req.status);
-                            return (
-                              <div 
-                                key={req.id} 
-                                onClick={() => !isAdmin && req.post_id && navigateToPost(req.post_id)}
-                                className={`group flex items-center justify-between p-3.5 md:p-2.5 rounded-[1.25rem] md:rounded-lg border bg-white/40 transition-all ${!isAdmin && req.post_id ? 'cursor-pointer hover:bg-white hover:shadow-md hover:-translate-y-0.5' : 'cursor-default'}`}
-                              >
-                                <p className="flex-1 text-gray-700 text-[8px] md:text-[10px] line-clamp-3 md:line-clamp-1 font-light pr-2 md:pr-2.5 leading-tight">
-                                  {req.content}
-                                </p>
-                                <div className="flex items-center space-x-2 md:space-x-1.5 shrink-0 ml-1.5">
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); if(isAdmin) updateRequestStatus(req.id, req.status); }}
-                                    className={`flex items-center space-x-1.5 md:space-x-1 px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border text-[10px] md:text-[8px] font-bold transition-all ${status.color} ${isAdmin ? 'hover:scale-105 active:scale-95 cursor-pointer' : ''}`}
-                                    title={isAdmin ? "상태 변경" : ""}
-                                  >
-                                    {status.icon}
-                                    <span className="whitespace-nowrap">{status.text}</span>
-                                  </button>
-                                  {isAdmin && (
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); deleteRequest(req.id); }}
-                                      className="p-1.5 md:p-1 text-gray-300 hover:text-red-500 transition-colors"
-                                      title="의뢰 삭제"
-                                    >
-                                      <X size={14} className="md:w-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {filteredPosts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-14 md:gap-x-8 gap-y-16 md:gap-y-8">
-              {filteredPosts.map(post => <PostCard key={post.id} post={post} onClick={() => navigateToPost(post.id)} />)}
-            </div>
+              )}
+            </>
           ) : (
-            <div className="py-28 text-center">
-              <div className="w-24 h-24 md:w-14 md:h-14 bg-emerald-50/50 rounded-full flex items-center justify-center mx-auto mb-8 md:mb-5"><Search size={32} className="text-emerald-200 md:w-5 md:h-5" /></div>
-              <p className="serif italic text-gray-400 mb-12 md:mb-6 text-lg md:text-xs">흔적이 보이지 않습니다.</p>
-              <button onClick={() => setSearchQuery('')} className="px-12 py-5 md:px-5 md:py-2.5 bg-emerald-900 text-white rounded-[1.5rem] md:rounded-md text-[13px] md:text-[10px] font-black uppercase shadow-xl">View All Records</button>
-            </div>
+            <div className="py-28 text-center"><p className="serif italic text-gray-400 mb-12 text-lg">기록을 찾을 수 없습니다.</p><button onClick={() => setSearchQuery('')} className="px-10 py-4 bg-emerald-900 text-white rounded-full text-xs font-black uppercase shadow-xl">Show All Records</button></div>
           )}
         </div>
       );
     }
 
     if (view === 'DETAIL') {
-      if (!selectedPost) {
-        return (
-          <div className="max-w-2xl mx-auto py-32 md:py-24 text-center animate-in fade-in zoom-in-95 duration-1000">
-            <div className="mb-12 md:mb-8 flex justify-center"><div className="relative"><Compass size={80} className="text-emerald-50 animate-[spin_10s_linear_infinite]" /><Leaf size={32} className="text-emerald-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" /></div></div>
-            <h2 className="serif text-4xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-4">길을 잃으셨나요?</h2>
-            <p className="text-gray-400 text-lg md:text-sm leading-relaxed mb-16 md:mb-10 px-8">이 숨결은 이미 바람을 타고 멀리 떠난 것 같습니다.</p>
-            <button onClick={navigateToHome} className="px-14 py-6 md:px-8 md:py-3.5 bg-emerald-900 text-white rounded-[3rem] md:rounded-lg font-black text-[13px] md:text-[10px] tracking-[0.25em] uppercase shadow-xl">Back to Safe Harbor</button>
-          </div>
-        );
-      }
-
+      if (!selectedPost) return <div className="max-w-2xl mx-auto py-32 text-center"><h2 className="serif text-4xl font-bold text-gray-900 mb-6">길을 잃으셨나요?</h2><button onClick={navigateToArchive} className="px-12 py-5 bg-emerald-900 text-white rounded-full font-black text-xs tracking-widest uppercase shadow-xl">Back to Archive</button></div>;
       return (
-        <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 px-6 md:px-0">
-          <div className="flex items-center justify-between mb-14 md:mb-8">
-            <button onClick={navigateToHome} className="flex items-center bg-emerald-50/60 hover:bg-emerald-100/80 border-2 border-emerald-100/50 px-7 py-5 md:px-4 md:py-2.5 rounded-[1.5rem] md:rounded-md transition-all text-emerald-800 font-black text-[13px] md:text-[9px] tracking-widest uppercase shadow-md hover:shadow-xl"><ArrowLeft size={20} className="mr-3.5 md:mr-1.5 md:w-3 md:h-3" /><span>Back to List</span></button>
-            {isAdmin && (
-              <div className="flex space-x-2.5 md:space-x-1">
-                <button onClick={() => setView('EDIT')} className="p-3.5 md:p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-2xl md:rounded-md"><Edit size={24} className="md:w-3.5 md:h-3.5" /></button>
-                <button onClick={() => setShowDeleteModal(true)} className="p-3.5 md:p-1.5 text-red-400 hover:bg-red-50 rounded-2xl md:rounded-md"><Trash2 size={24} className="md:w-3.5 md:h-3.5" /></button>
-              </div>
-            )}
+        <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
+          <div className="flex items-center justify-between mb-12">
+            <div className="flex space-x-3">
+              <button onClick={() => window.history.back()} className="flex items-center bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-100 px-6 py-3 rounded-full transition-all text-emerald-800 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
+              
+              {/* DETAIL View Share Button */}
+              <button 
+                onClick={handleShare}
+                className="flex items-center bg-white hover:bg-emerald-900 hover:text-white border border-emerald-100 px-6 py-3 rounded-full transition-all text-emerald-800 font-black text-[11px] tracking-widest uppercase"
+                title="공유하기"
+              >
+                <Share2 size={16} className="mr-2" />
+                <span>Share</span>
+              </button>
+            </div>
+            
+            {isAdmin && <div className="flex space-x-2"><button onClick={() => setView('EDIT')} className="p-3 text-emerald-600 hover:bg-emerald-50 rounded-full"><Edit size={20} /></button><button onClick={() => setShowDeleteModal(true)} className="p-3 text-red-400 hover:bg-red-50 rounded-full"><Trash2 size={20} /></button></div>}
           </div>
-          <div className="mb-4 md:mb-8"><span className="text-[12px] md:text-[9px] font-black tracking-[0.5em] text-emerald-500 uppercase">Daily Insight</span></div>
-          <h1 className="serif text-[2.0rem] md:text-[1.8rem] font-bold text-gray-900 mb-10 md:mb-5 leading-[1.5]">{selectedPost.title}</h1>
-          <div className="text-gray-400 text-sm md:text-[10px] mb-14 md:mb-8 flex items-center justify-between border-b md:border-b-0.5 border-emerald-50/50 pb-8 md:pb-4">
-            <div className="flex items-center space-x-5 md:space-x-2"><span className="font-black text-gray-900 uppercase tracking-tighter">Dr. Halezone</span><span className="w-1.5 h-1.5 md:w-0.5 md:h-0.5 bg-emerald-100 rounded-full"></span><span>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
-          </div>
+          <div className="mb-4"><span className="text-[11px] font-black tracking-[0.5em] text-emerald-500 uppercase">Archive No. {String(selectedPost.id).slice(0, 6)}</span></div>
+          <h1 className="serif text-[2.5rem] md:text-[2.2rem] font-bold text-gray-900 mb-8 leading-tight">{selectedPost.title}</h1>
+          <div className="text-gray-400 text-xs mb-12 flex items-center justify-between border-b border-emerald-50/50 pb-6"><div className="flex items-center space-x-4"><span className="font-black text-gray-900 uppercase tracking-tighter">박영수 전문의</span><span>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div></div>
           {renderStyledContent(selectedPost.content, selectedPost.image_url)}
-          <div className="mt-24 md:mt-16 pt-16 md:pt-10 border-t md:border-t-0.5 border-emerald-50 flex flex-col items-center">
-            <div className="mb-10 md:mb-5 text-center"><Leaf size={28} className="text-emerald-100 mx-auto mb-5 md:mb-2 md:w-4 md:h-4" /><p className="serif italic text-gray-400 text-base md:text-[10px]">기록의 끝에서 다시 처음으로</p></div>
-            <button onClick={navigateToHome} className="flex items-center bg-emerald-900 hover:bg-black text-white px-14 py-6 md:px-6 md:py-3.5 rounded-[3rem] md:rounded-lg transition-all font-black text-[13px] md:text-[10px] tracking-[0.25em] uppercase shadow-xl hover:scale-105"><ArrowLeft size={22} className="mr-4 md:mr-2 md:w-3.5 md:h-3.5" /><span>Back to Journal List</span></button>
+          <div className="mt-20 p-8 md:p-10 bg-emerald-50/30 rounded-[3rem] border border-emerald-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left">
+            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0"><img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover" /></div>
+            <div className="space-y-4">
+              <h4 className="serif text-2xl font-bold text-gray-900">박영수 전문의</h4>
+              <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-widest">서울대학교 의과대학 졸업 · 서울대병원 전임의 수료</p>
+              <p className="text-sm text-gray-500 leading-relaxed">이 기록은 임상 데이터와 최신 문헌을 바탕으로 박영수 전문의가 직접 검토하고 작성하였습니다.</p>
+              <div className="flex justify-center md:justify-start pt-2"><div className="w-12 h-0.5 bg-emerald-100"></div></div>
+            </div>
           </div>
+          <div className="mt-24 flex flex-col items-center"><button onClick={navigateToArchive} className="flex items-center bg-emerald-900 hover:bg-black text-white px-10 py-5 rounded-full transition-all font-black text-xs tracking-widest uppercase shadow-xl"><ArrowLeft size={18} className="mr-3" /><span>Archive Home</span></button></div>
         </div>
       );
     }
 
-    if (view === 'LOGIN') return <LoginForm onLoginSuccess={() => setView('LIST')} />;
-    if (view === 'WRITE' || view === 'EDIT') {
-      return (
-        <PostForm 
-          post={view === 'EDIT' ? selectedPost : null} 
-          onSuccess={() => { 
-            fetchPosts(); 
-            setToast({ message: view === 'EDIT' ? '기록이 수정되었습니다.' : '새로운 숨결이 기록되었습니다.', type: 'success' });
-            setView('LIST'); 
-            navigateToHome(); 
-          }}
-          onError={(msg) => setToast({ message: msg, type: 'error' })}
-          onCancel={() => { setView(view === 'EDIT' ? 'DETAIL' : 'LIST'); if(view === 'WRITE') navigateToHome(); }}
-        />
-      );
-    }
+    if (view === 'LOGIN') return <LoginForm onLoginSuccess={() => setView('MAIN')} />;
+    if (view === 'WRITE' || view === 'EDIT') return <PostForm post={view === 'EDIT' ? selectedPost : null} onSuccess={() => { fetchPosts(); setToast({ message: view === 'EDIT' ? '기록이 수정되었습니다.' : '새로운 숨결이 기록되었습니다.', type: 'success' }); navigateToArchive(); }} onError={(msg) => setToast({ message: msg, type: 'error' })} onCancel={() => { setView(view === 'EDIT' ? 'DETAIL' : 'MAIN'); if(view === 'WRITE') navigateToHome(); }} />;
     return null;
   };
 
   return (
-    <div className="min-h-screen pb-40 bg-white relative overflow-x-hidden">
-      <Header isAdmin={isAdmin} view={view} onNavigate={(v) => { if(v === 'LIST') navigateToHome(); else setView(v); }} onLogout={handleLogout} />
-      <main className="max-w-5xl mx-auto px-8 md:px-12">
-        {error && <div className="mb-10 p-7 md:p-4 bg-red-50 text-red-600 rounded-[1.5rem] md:rounded-lg flex items-center text-base md:text-xs border border-red-100"><AlertCircle size={24} className="mr-3.5 md:mr-2 md:w-3.5 md:h-3.5" />{error}</div>}
-        {renderContent()}
-      </main>
+    <div className="min-h-screen pb-20 bg-white relative overflow-x-hidden">
+      <div className="fixed top-0 left-0 w-full h-1.5 z-[100] pointer-events-none">
+        <div className="h-full bg-emerald-600 transition-all duration-100" style={{ width: `${scrollProgress}%` }}></div>
+        {scrollProgress > 1 && (
+          <div className="absolute top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md border border-emerald-50 transition-all duration-100" style={{ left: `calc(${scrollProgress}% - 8px)` }}>
+            <img src={LOGO_IMAGE_URL} className="w-4 h-4 object-contain" alt="P" />
+          </div>
+        )}
+      </div>
 
-      {/* 포스트 연결 모달 */}
-      {linkingRequestId && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-8 bg-emerald-950/20 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] md:rounded-xl p-10 md:p-6 max-w-lg w-full shadow-2xl border border-emerald-50 animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-8 md:mb-4">
-              <h3 className="serif text-2xl md:text-lg font-bold text-gray-900">연구 결과 연결하기</h3>
-              <button onClick={() => setLinkingRequestId(null)} className="p-2 md:p-1 text-gray-400 hover:bg-gray-100 rounded-full"><X size={20} className="md:w-4 md:h-4" /></button>
-            </div>
-            <p className="text-gray-500 text-sm md:text-xs mb-6 md:mb-4">이 연구 의뢰를 완료 상태로 변경하고, 발행된 포스트와 연결합니다.</p>
-            <div className="max-h-[300px] md:max-h-[200px] overflow-y-auto space-y-3 md:space-y-2 pr-2 custom-scrollbar">
-              {posts.map(post => (
-                <button 
-                  key={post.id}
-                  onClick={() => handleLinkPost(post.id)}
-                  className="w-full text-left p-4 md:p-2.5 rounded-xl md:rounded-lg border border-emerald-50 hover:border-emerald-500 hover:bg-emerald-50/30 transition-all flex items-center justify-between group"
-                >
-                  <span className="serif text-[15px] md:text-xs font-bold text-gray-800 line-clamp-1">{post.title}</span>
-                  <LinkIcon size={16} className="text-emerald-300 group-hover:text-emerald-500 shrink-0 md:w-3" />
-                </button>
-              ))}
-            </div>
-            <button 
-              onClick={() => {
-                // 포스트 없이 그냥 완료 처리
-                handleLinkPost(null);
-              }}
-              className="w-full mt-6 md:mt-4 py-4 md:py-2 bg-gray-50 text-gray-400 rounded-xl md:rounded-lg font-bold text-sm md:text-[10px] hover:bg-gray-100 transition-all"
-            >
-              연결 없이 완료 처리
-            </button>
-          </div>
-        </div>
-      )}
+      <Header isAdmin={isAdmin} view={view} onNavigate={(v) => { if(v === 'MAIN') navigateToHome(); else if(v === 'LIST') navigateToArchive(); else if(v === 'LAB') navigateToLab(); else setView(v); }} onLogout={handleLogout} />
+      
+      <main className="max-w-6xl mx-auto px-8 md:px-12">{error && <div className="mt-10 p-6 bg-red-50 text-red-600 rounded-2xl flex items-center border border-red-100"><AlertCircle size={20} className="mr-3" />{error}</div>}{renderContent()}</main>
+      
+      <button 
+        onClick={scrollToTop}
+        className={`fixed bottom-10 right-10 z-[80] w-14 h-14 md:w-12 md:h-12 bg-white rounded-full shadow-2xl border border-emerald-50 flex items-center justify-center transition-all duration-500 group overflow-hidden ${showTopButton ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}
+      >
+        <div className="absolute inset-0 bg-emerald-900 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+        <img src={LOGO_IMAGE_URL} className="w-6 h-6 md:w-5 md:h-5 relative z-10 object-contain group-hover:hidden" alt="T" />
+        <ChevronUp size={24} className="hidden group-hover:block relative z-10 text-white animate-bounce-slow" />
+      </button>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-emerald-950/30 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white rounded-[3rem] md:rounded-xl p-12 md:p-6 max-w-md w-full shadow-2xl border border-emerald-50 animate-in zoom-in-95 duration-300 text-center">
-            <div className="w-16 h-16 md:w-12 md:h-12 bg-red-50 rounded-[2rem] md:rounded-lg flex items-center justify-center mx-auto mb-8 md:mb-4"><Trash2 className="text-red-400 md:w-6 md:h-6" size={32} /></div>
-            <h3 className="serif text-2xl md:text-lg font-bold text-gray-900 mb-4 md:mb-2">기록을 삭제하시겠습니까?</h3>
-            <div className="flex space-x-3.5 md:space-x-2 mt-8 md:mt-4">
-              <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-6 md:py-3 rounded-[1.5rem] md:rounded-md font-black text-gray-400 hover:bg-gray-50 transition-colors text-base md:text-[10px] uppercase">취소</button>
-              <button onClick={executeDelete} className="flex-1 py-6 md:py-3 rounded-[1.5rem] md:rounded-md font-black bg-red-500 text-white hover:bg-red-600 transition-all text-base md:text-[10px] uppercase">삭제하기</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {toast && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-bottom-10 fade-in duration-500 w-[calc(100%-4rem)] max-w-sm">
-          <div className={`flex items-center justify-center space-x-4 md:space-x-2.5 px-8 py-6 md:px-5 md:py-3 rounded-[1.5rem] md:rounded-lg shadow-2xl border-2 ${toast.type === 'success' ? 'bg-emerald-900 text-white border-emerald-700' : 'bg-red-50 text-red-600 border-red-100'}`}>
-            {toast.type === 'success' ? <CheckCircle2 size={24} className="md:w-3.5 md:h-3.5" /> : <AlertCircle size={24} className="md:w-3.5 md:h-3.5" />}
-            <span className="text-base md:text-xs font-black">{toast.message}</span>
-          </div>
-        </div>
-      )}
+      {linkingRequestId && <div className="fixed inset-0 z-[120] flex items-center justify-center p-8 bg-emerald-950/20 backdrop-blur-sm"><div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-emerald-50"><div className="flex items-center justify-between mb-8"><h3 className="serif text-2xl font-bold text-gray-900">연구 결과 연결하기</h3><button onClick={() => setLinkingRequestId(null)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full"><X size={20} /></button></div><div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">{posts.map(post => <button key={post.id} onClick={() => handleLinkPost(post.id)} className="w-full text-left p-4 rounded-2xl border border-emerald-50 hover:border-emerald-500 hover:bg-emerald-50/30 transition-all flex items-center justify-between group"><span className="serif text-base font-bold text-gray-800 line-clamp-1">{post.title}</span><LinkIcon size={16} className="text-emerald-300" /></button>)}</div><button onClick={() => handleLinkPost(null)} className="w-full mt-6 py-4 bg-gray-50 text-gray-400 rounded-2xl font-bold text-sm">연결 없이 완료 처리</button></div></div>}
+      {showDeleteModal && <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-emerald-950/30 backdrop-blur-xl animate-in fade-in duration-300"><div className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-2xl border border-emerald-50 text-center"><div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-8"><Trash2 className="text-red-400" size={32} /></div><h3 className="serif text-2xl font-bold text-gray-900 mb-4">기록을 삭제하시겠습니까?</h3><div className="flex space-x-4 mt-8"><button onClick={() => setShowDeleteModal(false)} className="flex-1 py-5 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-colors text-sm uppercase">취소</button><button onClick={executeDelete} className="flex-1 py-5 rounded-2xl font-black bg-red-500 text-white hover:bg-red-600 transition-all text-sm uppercase">삭제하기</button></div></div></div>}
+      {toast && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-bottom-10 fade-in duration-500 w-[calc(100%-4rem)] max-w-sm"><div className={`flex items-center justify-center space-x-4 px-6 py-4 rounded-2xl shadow-2xl border-2 ${toast.type === 'success' ? 'bg-emerald-900 text-white border-emerald-700' : 'bg-red-50 text-red-600 border-red-100'}`}><CheckCircle2 size={20} /><span className="text-sm font-black">{toast.message}</span></div></div>}
     </div>
   );
 };
@@ -681,24 +772,11 @@ const PostForm: React.FC<{ post: Post | null, onSuccess: () => void, onError: (m
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const isMod = e.ctrlKey || e.metaKey;
     if (!isMod) return;
-
     switch (e.key.toLowerCase()) {
-      case 'h':
-        e.preventDefault();
-        insertTag('HL', true);
-        break;
-      case 'b':
-        e.preventDefault();
-        insertTag('SUB', true);
-        break;
-      case 'q':
-        e.preventDefault();
-        insertTag('QUOTE', true);
-        break;
-      case 's':
-        e.preventDefault();
-        handleFormSubmit();
-        break;
+      case 'h': e.preventDefault(); insertTag('HL', true); break;
+      case 'b': e.preventDefault(); insertTag('SUB', true); break;
+      case 'q': e.preventDefault(); insertTag('QUOTE', true); break;
+      case 's': e.preventDefault(); handleFormSubmit(); break;
     }
   };
 
@@ -719,43 +797,43 @@ const PostForm: React.FC<{ post: Post | null, onSuccess: () => void, onError: (m
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 md:py-6 px-6 md:px-0">
-      <div className="flex items-center justify-between mb-14 md:mb-8">
-        <h2 className="serif text-3xl md:text-xl font-black text-gray-900">{post ? '숨결 수정' : '새로운 숨결'}</h2>
-        <button onClick={onCancel} className="text-gray-400 font-black transition-colors text-base md:text-[10px] py-3 md:py-1.5 px-6 md:px-3.5 bg-gray-50 rounded-[1.5rem] md:rounded-md uppercase tracking-widest">취소</button>
+    <div className="max-w-3xl mx-auto py-10 px-6 md:px-0">
+      <div className="flex items-center justify-between mb-14">
+        <h2 className="serif text-3xl font-black text-gray-900">{post ? '숨결 수정' : '새로운 숨결'}</h2>
+        <button onClick={onCancel} className="text-gray-400 font-black transition-colors text-xs py-3 px-6 bg-gray-50 rounded-full uppercase tracking-widest">취소</button>
       </div>
-      <form onSubmit={handleFormSubmit} className="space-y-14 md:space-y-8" onKeyDown={handleKeyDown}>
-        <div className="space-y-4 md:space-y-1.5">
-          <label className="text-[12px] md:text-[9px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2 md:ml-1">Journal Title</label>
-          <input type="text" className="w-full text-2xl md:text-lg font-bold border-b-2 md:border-b border-emerald-50 py-5 md:py-2.5 focus:outline-none focus:border-emerald-500 bg-transparent" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="제목을 입력하세요" />
+      <form onSubmit={handleFormSubmit} className="space-y-12" onKeyDown={handleKeyDown}>
+        <div className="space-y-4">
+          <label className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2">Journal Title</label>
+          <input type="text" className="w-full text-2xl font-bold border-b-2 border-emerald-50 py-4 focus:outline-none focus:border-emerald-500 bg-transparent" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="제목을 입력하세요" />
         </div>
-        <div className="space-y-6 md:space-y-2.5">
-          <label className="text-[12px] md:text-[9px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2 md:ml-1">Main Visual</label>
-          <div className="flex items-center space-x-8 md:space-x-5">
-            {imageUrl && <img src={imageUrl} className="w-28 h-28 md:w-20 md:h-20 rounded-[2rem] md:rounded-lg object-cover border border-emerald-50 shadow-xl" />}
+        <div className="space-y-6">
+          <label className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2">Main Visual</label>
+          <div className="flex items-center space-x-6">
+            {imageUrl && <img src={imageUrl} className="w-24 h-24 rounded-3xl object-cover border border-emerald-50 shadow-xl" />}
             <label className="flex-1 cursor-pointer">
-              <div className="w-full h-28 md:h-20 flex flex-col items-center justify-center border-2 border-dashed border-emerald-100 rounded-[2rem] md:rounded-lg bg-emerald-50/10 hover:bg-emerald-50/40 transition-all">
-                {uploading ? <Loader2 className="animate-spin text-emerald-300 md:w-4 md:h-4" size={32} /> : <><ImageIcon className="text-emerald-300 mb-4 md:mb-1 md:w-5 md:h-5" size={32} /><span className="text-[12px] md:text-[9px] text-emerald-800 font-black uppercase tracking-[0.3em]">Image Upload</span></>}
+              <div className="w-full h-24 flex flex-col items-center justify-center border-2 border-dashed border-emerald-100 rounded-3xl bg-emerald-50/10 hover:bg-emerald-50/40 transition-all">
+                {uploading ? <Loader2 size={18} className="animate-spin text-emerald-300" /> : <><ImageIcon className="text-emerald-300 mb-2" /><span className="text-[10px] text-emerald-800 font-black uppercase tracking-[0.3em]">Image Upload</span></>}
               </div>
               <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
             </label>
           </div>
         </div>
-        <div className="space-y-6 md:space-y-2.5">
-          <div className="flex items-center justify-between border-b-2 md:border-b border-emerald-50 pb-6 md:pb-2">
-            <label className="text-[12px] md:text-[9px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2 md:ml-1">Context</label>
-            <div className="flex space-x-3.5 md:space-x-1">
-              <button type="button" onClick={() => insertTag('IMAGE')} className="p-3.5 md:p-1 text-emerald-600 hover:bg-emerald-50 rounded-[1.5rem] md:rounded-md" title="이미지 삽입"><ImageIcon size={24} className="md:w-3.5 md:h-3.5" /></button>
-              <button type="button" onClick={() => insertTag('SUB', true)} className="p-3.5 md:p-1 text-emerald-600 hover:bg-emerald-50 rounded-[1.5rem] md:rounded-md" title="소제목 (Ctrl+B)"><Heading2 size={24} className="md:w-3.5 md:h-3.5" /></button>
-              <button type="button" onClick={() => insertTag('QUOTE', true)} className="p-3.5 md:p-1 text-emerald-600 hover:bg-emerald-50 rounded-[1.5rem] md:rounded-md" title="인용구 (Ctrl+Q)"><Quote size={24} className="md:w-3.5 md:h-3.5" /></button>
-              <button type="button" onClick={() => insertTag('HL', true)} className="p-3.5 md:p-1 text-emerald-600 hover:bg-emerald-50 rounded-[1.5rem] md:rounded-md" title="하이라이트 (Ctrl+H)"><Highlighter size={24} className="md:w-3.5 md:h-3.5" /></button>
-              <button type="button" onClick={() => insertTag('HR')} className="p-3.5 md:p-1 text-emerald-600 hover:bg-emerald-50 rounded-[1.5rem] md:rounded-md" title="구분선"><Minus size={24} className="md:w-3.5 md:h-3.5" /></button>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-emerald-50 pb-4">
+            <label className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] ml-2">Context</label>
+            <div className="flex space-x-2">
+              <button type="button" onClick={() => insertTag('IMAGE')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full" title="이미지 삽입"><ImageIcon size={20} /></button>
+              <button type="button" onClick={() => insertTag('SUB', true)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full" title="소제목"><Heading2 size={20} /></button>
+              <button type="button" onClick={() => insertTag('QUOTE', true)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full" title="인용구"><Quote size={20} /></button>
+              <button type="button" onClick={() => insertTag('HL', true)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full" title="하이라이트"><Highlighter size={20} /></button>
+              <button type="button" onClick={() => insertTag('HR')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full" title="구분선"><Minus size={20} /></button>
             </div>
           </div>
-          <textarea ref={textareaRef} className="w-full h-[35rem] md:h-[22rem] focus:outline-none bg-transparent serif text-xl md:text-sm leading-relaxed placeholder:text-gray-200 resize-none" value={content} onChange={(e) => setContent(e.target.value)} required placeholder="당신의 통찰을 자유롭게 남겨주세요..." />
+          <textarea ref={textareaRef} className="w-full h-[30rem] focus:outline-none bg-transparent serif text-xl leading-relaxed placeholder:text-gray-200 resize-none" value={content} onChange={(e) => setContent(e.target.value)} required placeholder="당신의 통찰을 자유롭게 남겨주세요..." />
         </div>
-        <button type="submit" disabled={submitting || uploading} className="w-full bg-emerald-900 text-white py-7 md:py-4 rounded-[2.5rem] md:rounded-lg font-black hover:bg-black transition-all shadow-lg flex items-center justify-center space-x-5 md:space-x-2 text-lg md:text-sm uppercase tracking-[0.3em]" title="기록 저장 (Ctrl+S)">
-          {submitting ? <Loader2 className="animate-spin md:w-4 md:h-4" size={28} /> : <><Send size={24} className="md:w-3.5 md:h-3.5" /><span>Publish Record</span></>}
+        <button type="submit" disabled={submitting || uploading} className="w-full bg-emerald-900 text-white py-6 rounded-3xl font-black hover:bg-black transition-all shadow-lg flex items-center justify-center space-x-4 text-sm uppercase tracking-[0.3em]">
+          {submitting ? <Loader2 className="animate-spin" /> : <><Send size={20} /><span>Publish Record</span></>}
         </button>
       </form>
     </div>
@@ -779,12 +857,12 @@ const LoginForm: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess })
     }
   };
   return (
-    <div className="max-w-md mx-auto py-40 md:py-24 text-center px-8 md:px-0">
-      <div className="mb-12 md:mb-5"><span className="text-[12px] md:text-[9px] font-black tracking-[0.6em] text-emerald-500 uppercase">Administrator</span></div>
-      <h2 className="serif text-4xl md:text-2xl font-bold mb-16 md:mb-8 text-gray-900 leading-tight">관리자님,<br/>반갑습니다.</h2>
-      <form onSubmit={handleLogin} className="space-y-7 md:space-y-4">
-        <input type="password" placeholder="비밀번호" className="w-full px-8 py-7 md:px-4 md:py-3 rounded-[1.5rem] md:rounded-lg border border-emerald-50 bg-emerald-50/5 focus:outline-none text-center text-xl md:text-base" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit" disabled={loading} className="w-full bg-emerald-900 text-white py-7 md:py-3 rounded-[1.5rem] md:rounded-lg font-black hover:bg-black transition-all shadow-xl text-lg md:text-[10px] uppercase tracking-[0.3em]">{loading ? <Loader2 className="animate-spin mx-auto md:w-4 md:h-4" size={28} /> : 'Connect'}</button>
+    <div className="max-md mx-auto py-40 text-center px-8 md:px-0">
+      <div className="mb-8 text-emerald-500 font-black tracking-[0.6em] uppercase text-[10px]">Administrator</div>
+      <h2 className="serif text-4xl font-bold mb-12 text-gray-900 leading-tight">관리자님,<br/>반갑습니다.</h2>
+      <form onSubmit={handleLogin} className="space-y-6">
+        <input type="password" placeholder="비밀번호" className="w-full px-8 py-5 rounded-2xl border border-emerald-50 bg-emerald-50/5 focus:outline-none text-center text-xl" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <button type="submit" disabled={loading} className="w-full bg-emerald-900 text-white py-4 rounded-2xl font-black hover:bg-black transition-all shadow-xl text-xs uppercase tracking-[0.3em]">{loading ? <Loader2 className="animate-spin mx-auto" /> : 'Connect'}</button>
       </form>
     </div>
   );

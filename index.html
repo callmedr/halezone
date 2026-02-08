@@ -36,6 +36,13 @@
         .serif {
             font-family: 'Noto+Serif+KR', serif;
         }
+        @keyframes pulse-gentle {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+        .animate-pulse-gentle {
+            animation: pulse-gentle 2.5s ease-in-out infinite;
+        }
     </style>
 <script type="importmap">
 {
