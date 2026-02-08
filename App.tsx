@@ -33,7 +33,9 @@ import {
   ChevronDown,
   ChevronUp,
   Mail,
-  Share2
+  Share2,
+  MessageCircle,
+  Sparkles
 } from 'lucide-react';
 
 const DOCTOR_PHOTO_URL = "https://byiaqutzcfwgxiwvmqlx.supabase.co/storage/v1/object/public/board/uploads/gateway.PNG";
@@ -65,6 +67,11 @@ const App: React.FC = () => {
   const [requests, setRequests] = useState<BlogRequest[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [linkingRequestId, setLinkingRequestId] = useState<any | null>(null);
+
+  // 포스트 하단 질문 관련 상태
+  const [postQuestionContent, setPostQuestionContent] = useState('');
+  const [isSubmittingPostQuestion, setIsSubmittingPostQuestion] = useState(false);
+  const [postQuestionSuccess, setPostQuestionSuccess] = useState(false);
 
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showTopButton, setShowTopButton] = useState(false);
@@ -119,6 +126,8 @@ const App: React.FC = () => {
       if (foundPost) {
         setSelectedPost(foundPost);
         setView('DETAIL');
+        setPostQuestionSuccess(false);
+        setPostQuestionContent('');
         window.scrollTo(0, 0);
       } else if (!isInitialLoading && posts.length > 0) {
         setSelectedPost(null);
@@ -156,7 +165,7 @@ const App: React.FC = () => {
   // Social Card & Meta Tag Optimization
   useEffect(() => {
     const baseTitle = "Halezone: 숨결의 온도";
-    const defaultDesc = "서울대병원 산부인과 전임의 박영수가 데이터 기반으로 해석하는 전문 의학 인사이트 블로그입니다.";
+    const defaultDesc = "서울대병원 산부인과를 수료한 전임의 박영수가 데이터 기반으로 해석하는 전문 의학 인사이트 블로그입니다.";
     const defaultImg = LOGO_IMAGE_URL;
     const baseUrl = window.location.origin + window.location.pathname;
 
@@ -259,7 +268,7 @@ const App: React.FC = () => {
   const handleShare = async () => {
     const shareData = {
       title: document.title,
-      text: view === 'DETAIL' ? `[Halezone] 박영수 전문의의 의학 통찰: ${selectedPost?.title}` : "전문의 박영수의 의학 인사이트 블로그, Halezone",
+      text: view === 'DETAIL' ? `[Halezone] 전문의 박영수의 의학 통찰: ${selectedPost?.title}` : "전문의 박영수의 의학 인사이트 블로그, Halezone",
       url: window.location.href,
     };
 
@@ -287,6 +296,21 @@ const App: React.FC = () => {
     } catch (err) {
       setToast({ message: '의뢰 실패. 잠시 후 다시 시도해주세요.', type: 'error' });
     } finally { setIsSubmittingRequest(false); }
+  };
+
+  const handlePostQuestionSubmit = async () => {
+    if (!postQuestionContent.trim() || !selectedPost) return;
+    setIsSubmittingPostQuestion(true);
+    try {
+      const fullContent = `[${selectedPost.title}에 대한 질문] ${postQuestionContent}`;
+      const { error } = await supabase.from('blog_requests').insert([{ content: fullContent }]);
+      if (error) throw error;
+      setPostQuestionSuccess(true);
+      setPostQuestionContent('');
+      fetchRequests(); 
+    } catch (err) {
+      setToast({ message: '질문 전송 실패. 잠시 후 다시 시도해주세요.', type: 'error' });
+    } finally { setIsSubmittingPostQuestion(false); }
   };
 
   const updateRequestStatus = async (requestId: any, currentStatus: RequestStatus) => {
@@ -424,8 +448,8 @@ const App: React.FC = () => {
                 <span className="text-emerald-600">의학의 숨결</span>을 해석합니다.
               </h1>
               <p className="text-gray-500 text-lg md:text-xl font-light leading-relaxed max-w-xl">
-                서울대학교 의과대학을 졸업하고 서울대병원 산부인과에서 임상을 수련한 박영수 전문의입니다. 
-                복잡한 데이터를 명료한 지혜로 바꾸어 당신의 일상을 지킵니다.
+                서울대학교 의과대학을 졸업하고 서울대병원 산부인과에서 임상을 수련한 전문의 박영수입니다. 
+                어려운 의학 지식을 쉽고 따뜻한 지혜로 바꾸어, 당신의 숨결이 한결 더 편안해질 수 있는 작은 통찰들을 기록합니다.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
                 <div className="flex items-center space-x-2 text-gray-400">
@@ -466,7 +490,7 @@ const App: React.FC = () => {
                    <Microscope size={32} className="text-emerald-300" />
                 </div>
                 <h3 className="serif text-3xl font-bold mb-4">연구소</h3>
-                <p className="text-emerald-100/60 font-light text-sm mb-10 leading-relaxed">박영수 전문의에게<br/>의학적 고민을 직접 의뢰하세요</p>
+                <p className="text-emerald-100/60 font-light text-sm mb-10 leading-relaxed">당신의 사소한 숨결 하나까지 귀 기울입니다.<br/>평소 궁금했던 건강 고민들을 따뜻한 지혜로 풀어드립니다</p>
                 <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-300">
                    <span>Enter Lab</span>
                    <ArrowRight size={14} />
@@ -484,7 +508,7 @@ const App: React.FC = () => {
                    <BookOpen size={32} className="text-emerald-600" />
                 </div>
                 <h3 className="serif text-3xl font-bold text-gray-900 mb-4">기록보관소</h3>
-                <p className="text-gray-400 font-light text-sm mb-10 leading-relaxed">최신 의학 문헌을 바탕으로<br/>정립된 지식의 아카이브</p>
+                <p className="text-gray-400 font-light text-sm mb-10 leading-relaxed">당신의 오늘이 어제보다 더 건강하기를 바라는 마음으로,<br/>한 문장 한 문장 소중히 쌓아 올린 지식의 숲입니다.</p>
                 <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">
                    <span>Open Archive</span>
                    <ArrowRight size={14} />
@@ -674,9 +698,69 @@ const App: React.FC = () => {
           <div className="mb-4"><span className="text-[11px] font-black tracking-[0.5em] text-emerald-500 uppercase">Archive No. {String(selectedPost.id).slice(0, 6)}</span></div>
           <h1 className="serif text-[2.5rem] md:text-[2.2rem] font-bold text-gray-900 mb-8 leading-tight">{selectedPost.title}</h1>
           <div className="text-gray-400 text-xs mb-12 flex items-center justify-between border-b border-emerald-50/50 pb-6"><div className="flex items-center space-x-4"><span className="font-black text-gray-900 uppercase tracking-tighter">박영수 전문의</span><span>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div></div>
+          
+          {/* Post Content */}
           {renderStyledContent(selectedPost.content, selectedPost.image_url)}
-          <div className="mt-20 p-8 md:p-10 bg-emerald-50/30 rounded-[3rem] border border-emerald-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left">
-            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0"><img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover" /></div>
+
+          {/* New: Post Context Question Section */}
+          <div className="mt-24 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="bg-emerald-50/30 border border-emerald-100 rounded-[3rem] p-8 md:p-12 shadow-sm overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <Sparkles size={120} className="text-emerald-900" />
+              </div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                    <MessageCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="serif text-2xl font-bold text-gray-900">사유의 숲에서 마주한 당신의 물음</h3>
+                    <p className="text-emerald-700/60 text-sm font-medium">이 글의 내용 중 더 깊이 알고 싶은 부분이 있으신가요?</p>
+                  </div>
+                </div>
+
+                {!postQuestionSuccess ? (
+                  <div className="space-y-6">
+                    <textarea 
+                      className="w-full h-32 bg-white border border-emerald-50 rounded-[1.5rem] p-6 focus:outline-none focus:ring-2 focus:ring-emerald-200 serif text-lg text-gray-800 placeholder:text-gray-300 resize-none transition-all shadow-inner"
+                      placeholder="사소한 질문이라도 괜찮습니다. 당신의 숨결을 남겨주세요."
+                      value={postQuestionContent}
+                      onChange={(e) => setPostQuestionContent(e.target.value)}
+                    />
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={handlePostQuestionSubmit}
+                        disabled={isSubmittingPostQuestion || !postQuestionContent.trim()}
+                        className="flex items-center space-x-3 bg-emerald-900 text-white px-10 py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-lg hover:bg-black disabled:bg-emerald-200 transition-all hover:-translate-y-1"
+                      >
+                        {isSubmittingPostQuestion ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        <span>질문 건네기</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-8 text-center animate-in zoom-in duration-500">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6 shadow-md border border-emerald-50">
+                      <CheckCircle2 size={32} />
+                    </div>
+                    <p className="serif text-xl font-bold text-gray-900 mb-2">질문이 소중하게 전달되었습니다</p>
+                    <p className="text-gray-400 text-sm">박영수 전문의가 연구 후 '연구소(LAB)' 섹션에 답변을 남겨드립니다.</p>
+                    <button 
+                      onClick={() => setPostQuestionSuccess(false)}
+                      className="mt-8 text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-1"
+                    >
+                      추가 질문하기
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Doctor Profile Card */}
+          <div className="p-8 md:p-10 bg-white rounded-[3rem] border border-emerald-50 shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left">
+            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg shrink-0"><img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover" /></div>
             <div className="space-y-4">
               <h4 className="serif text-2xl font-bold text-gray-900">박영수 전문의</h4>
               <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-widest">서울대학교 의과대학 졸업 · 서울대병원 전임의 수료</p>
@@ -684,6 +768,7 @@ const App: React.FC = () => {
               <div className="flex justify-center md:justify-start pt-2"><div className="w-12 h-0.5 bg-emerald-100"></div></div>
             </div>
           </div>
+          
           <div className="mt-24 flex flex-col items-center"><button onClick={navigateToArchive} className="flex items-center bg-emerald-900 hover:bg-black text-white px-10 py-5 rounded-full transition-all font-black text-xs tracking-widest uppercase shadow-xl"><ArrowLeft size={18} className="mr-3" /><span>Archive Home</span></button></div>
         </div>
       );
