@@ -62,6 +62,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [recentReferrers, setRecentReferrers] = useState<any[]>([]);
 
   const [requestContent, setRequestContent] = useState('');
   const [requests, setRequests] = useState<BlogRequest[]>([]);
@@ -217,7 +218,12 @@ const App: React.FC = () => {
       setIsAdmin(session?.user?.email === ADMIN_EMAIL);
     });
     const recordVisit = async () => {
-      try { await supabase.from('visitor_logs').insert([{}]); } catch (e) {}
+      try { 
+        await supabase.from('visitor_logs').insert([{
+          referrer: document.referrer || null,
+          page_url: window.location.href
+        }]); 
+      } catch (e) {}
     };
     recordVisit();
     return () => authListener.subscription.unsubscribe();
@@ -233,9 +239,40 @@ const App: React.FC = () => {
     } catch (e) {}
   }, [isAdmin]);
 
+  const fetchRecentReferrers = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const { data } = await supabase
+        .from('visitor_logs')
+        .select('referrer, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setRecentReferrers(data || []);
+    } catch (e) {}
+  }, [isAdmin]);
+
   useEffect(() => {
-    if (isAdmin) fetchVisitorCount();
-  }, [isAdmin, fetchVisitorCount]);
+    if (isAdmin) {
+      fetchVisitorCount();
+      fetchRecentReferrers();
+    }
+  }, [isAdmin, fetchVisitorCount, fetchRecentReferrers]);
+
+  const getReferrerName = (url: string | null) => {
+    if (!url) return "직접 유입 / 북마크";
+    try {
+      const lowerUrl = url.toLowerCase();
+      if (lowerUrl.includes("naver.com")) return "네이버 검색";
+      if (lowerUrl.includes("google.com")) return "구글 검색";
+      if (lowerUrl.includes("instagram.com")) return "인스타그램";
+      if (lowerUrl.includes("facebook.com")) return "페이스북";
+      if (lowerUrl.includes("t.co")) return "트위터(X)";
+      if (lowerUrl.includes("halezone.com")) return "내부 이동";
+      return new URL(url).hostname;
+    } catch (e) {
+      return "기타 유입";
+    }
+  };
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -644,6 +681,23 @@ const App: React.FC = () => {
               <div className="mt-8 flex flex-col items-center space-y-4">
                 <button onClick={handleLogout} className="flex items-center space-x-2 px-6 py-2 text-[11px] font-black tracking-widest text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-full transition-all border border-transparent hover:border-emerald-100 uppercase"><LogOut size={14} /><span>Admin Logout</span></button>
                 {visitorCount !== null && <div className="flex items-center space-x-2 px-6 py-2 bg-emerald-50/40 rounded-full border border-emerald-100/30"><Users size={14} className="text-emerald-400" /><span className="serif text-[11px] font-bold text-emerald-800">Today's Visits: <span className="text-emerald-500">{visitorCount}</span></span></div>}
+                
+                {isAdmin && recentReferrers.length > 0 && (
+                  <div className="w-full max-w-xs mt-4 p-5 bg-white rounded-[2rem] border border-emerald-50 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Compass size={14} className="text-emerald-400" />
+                      <p className="text-[10px] font-black text-emerald-900/40 uppercase tracking-[0.3em]">최근 유입 경로</p>
+                    </div>
+                    <ul className="space-y-3">
+                      {recentReferrers.map((log, i) => (
+                        <li key={i} className="flex items-center justify-between text-[11px] group">
+                          <span className="font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">{getReferrerName(log.referrer)}</span>
+                          <span className="text-gray-300 font-medium">{new Date(log.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
