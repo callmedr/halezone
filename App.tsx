@@ -433,7 +433,7 @@ const App: React.FC = () => {
         {parts.map((part, index) => {
           if (part === '[IMAGE]') return <ImageComponent key={index} />;
           if (part === '[HR]') return <div key={index} className="relative flex items-center justify-center my-10 md:my-6 py-4 md:py-2 overflow-hidden"><div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-200 to-transparent"></div></div><div className="relative bg-white px-6"><Leaf size={20} className="text-emerald-400 fill-emerald-50 transform -rotate-12 md:w-3.5 md:h-3.5" /></div></div>;
-          if (part.startsWith('[QUOTE]')) return <blockquote key={index} className="my-8 md:my-4 pl-6 md:pl-4 pr-5 md:pr-2.5 py-6 md:py-3 bg-emerald-50/40 border-l-[4px] border-emerald-300 rounded-r-2xl md:rounded-r-md italic text-emerald-900/80 whitespace-pre-wrap text-[1.15rem] md:text-[1rem] leading-relaxed">{part.replace(/\[\/?QUOTE\]/g, '')}</blockquote>;
+          if (part.startsWith('[QUOTE]')) return <blockquote key={index} className="gowun my-8 md:my-4 pl-6 md:pl-4 pr-5 md:pr-2.5 py-6 md:py-3 bg-emerald-50/40 border-l-[4px] border-emerald-300 rounded-r-2xl md:rounded-r-md text-emerald-900/80 whitespace-pre-wrap text-[1.15rem] md:text-[1rem] leading-relaxed">{part.replace(/\[\/?QUOTE\]/g, '')}</blockquote>;
           if (part.startsWith('[HL]')) return <mark key={index} className="bg-emerald-100/60 text-emerald-900 px-1 rounded-sm whitespace-pre-wrap">{part.replace(/\[\/?HL\]/g, '')}</mark>;
           if (part.startsWith('[SUB]')) return <h3 key={index} className="text-[1.5rem] md:text-[1.3rem] font-bold text-gray-900 mt-10 md:mt-5 mb-5 md:mb-2.5 pt-6 md:pt-2 border-t border-emerald-50 whitespace-pre-wrap leading-tight">{part.replace(/\[\/?SUB\]/g, '')}</h3>;
           return <span key={index} className="whitespace-pre-wrap">{part}</span>;
@@ -924,7 +924,7 @@ const PostForm: React.FC<{ post: Post | null, onSuccess: () => void, onError: (m
     if (!file) return;
     setUploading(true);
     try {
-      // 이미지 처리 로직 (800px 제한, WebP 변환)
+      // 이미지 처리 로직 (1000px 제한, WebP 변환)
       const processedBlob = await new Promise<Blob>((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -935,7 +935,7 @@ const PostForm: React.FC<{ post: Post | null, onSuccess: () => void, onError: (m
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            const MAX_WIDTH = 800;
+            const MAX_WIDTH = 1000;
             
             if (width > MAX_WIDTH) {
               height = (MAX_WIDTH / width) * height;
