@@ -924,12 +924,47 @@ const PostForm: React.FC<{ post: Post | null, onSuccess: () => void, onError: (m
     if (!file) return;
     setUploading(true);
     try {
-      const fileName = `${Math.random()}.${file.name.split('.').pop()}`;
-      await supabase.storage.from(STORAGE_BUCKET).upload(`uploads/${fileName}`, file);
+      // 이미지 처리 로직 (800px 제한, WebP 변환)
+      const processedBlob = await new Promise<Blob>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const MAX_WIDTH = 800;
+            
+            if (width > MAX_WIDTH) {
+              height = (MAX_WIDTH / width) * height;
+              width = MAX_WIDTH;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('이미지 변환 실패'));
+            }, 'image/webp', 0.85);
+          };
+          img.onerror = () => reject(new Error('이미지 로드 실패'));
+        };
+        reader.onerror = () => reject(new Error('파일 읽기 실패'));
+      });
+
+      const fileName = `${Math.random()}.webp`;
+      await supabase.storage.from(STORAGE_BUCKET).upload(`uploads/${fileName}`, processedBlob, {
+        contentType: 'image/webp'
+      });
       const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(`uploads/${fileName}`);
       setImageUrl(data.publicUrl);
     } catch (err: any) {
-      onError('업로드 실패');
+      onError('업로드 실패: ' + (err.message || ''));
     } finally {
       setUploading(false);
     }
