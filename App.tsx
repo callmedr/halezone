@@ -32,6 +32,7 @@ import {
   Microscope,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Mail,
   Share2,
   MessageCircle,
@@ -206,6 +207,76 @@ const App: React.FC = () => {
       document.head.appendChild(canonicalTag);
     }
     canonicalTag.setAttribute('href', canonicalUrl);
+  }, [view, selectedPost]);
+
+  // JSON-LD Structured Data for AI Agents & SEO
+  useEffect(() => {
+    const authorData = {
+      "@type": "Person",
+      "name": "박영수",
+      "jobTitle": "산부인과 전문의",
+      "url": window.location.origin,
+      "alumniOf": {
+        "@type": "CollegeOrUniversity",
+        "name": "서울대학교 의과대학"
+      },
+      "description": "데이터 기반으로 의학적 통찰을 전하는 전문의입니다."
+    };
+
+    const publisherData = {
+      "@type": "Organization",
+      "name": "Halezone",
+      "logo": {
+        "@type": "ImageObject",
+        "url": LOGO_IMAGE_URL
+      }
+    };
+
+    let schemaData: any = {
+      "@context": "https://schema.org",
+    };
+
+    if (view === 'DETAIL' && selectedPost) {
+      const plainContent = selectedPost.content.replace(/\[\/?(?:HL|SUB|QUOTE|IMAGE|HR)\]/gs, '').replace(/\s+/g, ' ').trim();
+      schemaData = {
+        ...schemaData,
+        "@type": "BlogPosting",
+        "headline": selectedPost.title,
+        "description": plainContent.substring(0, 160),
+        "image": selectedPost.image_url || LOGO_IMAGE_URL,
+        "datePublished": selectedPost.created_at,
+        "author": authorData,
+        "publisher": publisherData,
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": window.location.href
+        }
+      };
+    } else {
+      schemaData = {
+        ...schemaData,
+        "@type": "WebSite",
+        "name": "Halezone: 숨결의 온도",
+        "url": window.location.origin,
+        "description": "서울대병원 산부인과를 수료한 전임의 박영수가 데이터 기반으로 해석하는 전문 의학 인사이트 블로그입니다.",
+        "author": authorData,
+        "publisher": publisherData
+      };
+    }
+
+    const existingScript = document.getElementById('json-ld-schema');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.id = 'json-ld-schema';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(schemaData);
+    document.head.appendChild(script);
+
+    return () => {
+      const scriptToRemove = document.getElementById('json-ld-schema');
+      if (scriptToRemove) scriptToRemove.remove();
+    };
   }, [view, selectedPost]);
 
   useEffect(() => {
@@ -423,7 +494,7 @@ const App: React.FC = () => {
           src={imageUrl} 
           loading="lazy"
           className="relative w-full rounded-[1.5rem] md:rounded-lg shadow-md border border-emerald-50 object-cover max-h-[450px] md:max-h-[550px]" 
-          alt="Post content" 
+          alt={selectedPost?.title || "Post content"} 
         />
       </div>
     ) : null;
@@ -514,45 +585,110 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-32">
-            <div 
-              onClick={navigateToLab}
-              className="group relative h-80 rounded-[3rem] bg-emerald-900 overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-2 transition-all duration-500"
-            >
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_white_0%,_transparent_70%)]"></div>
-              </div>
-              <div className="relative h-full flex flex-col items-center justify-center p-12 text-center text-white">
-                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-8 backdrop-blur-md group-hover:scale-110 transition-transform duration-500">
-                   <Microscope size={32} className="text-emerald-300" />
+          {/* Latest Insights Section (Archive Preview) */}
+          <section className="mb-32">
+            <div className="flex items-end justify-between mb-10 px-2">
+              <div>
+                <div className="inline-flex items-center space-x-2 text-emerald-500 mb-3">
+                  <Sparkles size={16} />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">Latest Insights</span>
                 </div>
-                <h3 className="serif text-3xl font-bold mb-4">연구소</h3>
-                <p className="text-emerald-100/60 font-light text-sm mb-10 leading-relaxed">당신의 사소한 숨결 하나까지 귀 기울입니다.<br/>평소 궁금했던 건강 고민들을 따뜻한 지혜로 풀어드립니다</p>
-                <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-300">
-                   <span>Enter Lab</span>
-                   <ArrowRight size={14} />
-                </div>
+                <h3 className="serif text-3xl md:text-4xl font-bold text-gray-900">최신 의학 기록</h3>
               </div>
+              <button 
+                onClick={navigateToArchive}
+                className="hidden md:flex items-center space-x-2 text-emerald-600 hover:text-emerald-800 font-bold text-sm transition-colors group"
+              >
+                <span>전체 기록 보기</span>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
 
-            <div 
-              onClick={navigateToArchive}
-              className="group relative h-80 rounded-[3rem] bg-white border border-emerald-100 overflow-hidden cursor-pointer shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-white"></div>
-              <div className="relative h-full flex flex-col items-center justify-center p-12 text-center">
-                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                   <BookOpen size={32} className="text-emerald-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {posts.slice(0, 3).map((post) => (
+                <div 
+                  key={post.id}
+                  onClick={() => navigateToPost(post.id)}
+                  className="group bg-white rounded-[2.5rem] border border-emerald-50 overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+                >
+                  <div className="aspect-[4/3] overflow-hidden relative">
+                    <img 
+                      src={post.image_url || LOGO_IMAGE_URL} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      alt={post.title}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </div>
+                  <div className="p-8">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Archive</span>
+                      <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                      <span className="text-[10px] text-gray-400 font-medium">{new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
+                    </div>
+                    <h4 className="serif text-xl font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-emerald-700 transition-colors leading-snug">
+                      {post.title}
+                    </h4>
+                    <div className="flex items-center text-emerald-600 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      <span>Read More</span>
+                      <ChevronRight size={12} className="ml-1" />
+                    </div>
+                  </div>
                 </div>
-                <h3 className="serif text-3xl font-bold text-gray-900 mb-4">기록보관소</h3>
-                <p className="text-gray-400 font-light text-sm mb-10 leading-relaxed">당신의 오늘이 어제보다 더 건강하기를 바라는 마음으로,<br/>한 문장 한 문장 소중히 쌓아 올린 지식의 숲입니다.</p>
-                <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">
-                   <span>Open Archive</span>
-                   <ArrowRight size={14} />
+              ))}
+            </div>
+
+            <div className="mt-12 text-center md:hidden">
+              <button 
+                onClick={navigateToArchive}
+                className="inline-flex items-center space-x-3 bg-emerald-50 text-emerald-700 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-emerald-100 transition-all"
+              >
+                <span>전체 기록 보기</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </section>
+
+          {/* Lab Section (Supporting Role) */}
+          <section className="mb-32">
+            <div 
+              onClick={navigateToLab}
+              className="group relative rounded-[3.5rem] bg-emerald-900 overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 transition-all duration-700"
+            >
+              <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,_rgba(16,185,129,0.2)_0%,_transparent_70%)]"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/40 to-transparent"></div>
+              </div>
+              
+              <div className="relative flex flex-col md:flex-row items-center justify-between p-10 md:p-16">
+                <div className="max-w-xl text-center md:text-left mb-10 md:mb-0">
+                  <div className="inline-flex items-center space-x-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full mb-6">
+                    <Microscope size={16} className="text-emerald-300" />
+                    <span className="text-emerald-100 font-black text-[10px] uppercase tracking-widest">Medical Insight Lab</span>
+                  </div>
+                  <h3 className="serif text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                    더 깊은 통찰이 필요하신가요?<br/>당신의 물음에 답해드립니다.
+                  </h3>
+                  <p className="text-emerald-100/60 font-light text-lg md:text-base leading-relaxed">
+                    평소 궁금했던 건강 고민이나 의학적 궁금증을 연구소에 남겨주세요.<br className="hidden md:block" />
+                    박영수 전문의가 최신 데이터를 기반으로 명료한 답을 찾아드립니다.
+                  </p>
+                </div>
+                
+                <div className="shrink-0">
+                  <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-700 shadow-2xl border border-white/10">
+                    <Send size={40} className="text-emerald-300" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="absolute bottom-0 right-0 p-10 md:p-16 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                <div className="flex items-center space-x-3 text-white font-black text-xs uppercase tracking-[0.3em]">
+                  <span>연구 의뢰하기</span>
+                  <ArrowRight size={16} />
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
           <footer className="relative -mx-8 md:-mx-12 px-8 md:px-12 py-24 bg-emerald-50/30 rounded-t-[4rem] border-t border-emerald-100 flex flex-col items-center text-center">
              <div className="relative mb-10 group">
@@ -731,7 +867,7 @@ const App: React.FC = () => {
     if (view === 'DETAIL') {
       if (!selectedPost) return <div className="max-w-2xl mx-auto py-32 text-center"><h2 className="serif text-4xl font-bold text-gray-900 mb-6">길을 잃으셨나요?</h2><button onClick={navigateToArchive} className="px-12 py-5 bg-emerald-900 text-white rounded-full font-black text-xs tracking-widest uppercase shadow-xl">Back to Archive</button></div>;
       return (
-        <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
+        <article className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
           <div className="flex items-center justify-between mb-12">
             <div className="flex space-x-3">
               <button onClick={() => window.history.back()} className="flex items-center bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-100 px-6 py-3 rounded-full transition-all text-emerald-800 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
@@ -751,13 +887,13 @@ const App: React.FC = () => {
           </div>
           <div className="mb-4"><span className="text-[11px] font-black tracking-[0.5em] text-emerald-500 uppercase">Archive No. {String(selectedPost.id).slice(0, 6)}</span></div>
           <h1 className="serif text-[2.5rem] md:text-[2.2rem] font-bold text-gray-900 mb-8 leading-tight">{selectedPost.title}</h1>
-          <div className="text-gray-400 text-xs mb-12 flex items-center justify-between border-b border-emerald-50/50 pb-6"><div className="flex items-center space-x-4"><span className="font-black text-gray-900 uppercase tracking-tighter">박영수 전문의</span><span>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div></div>
+          <div className="text-gray-400 text-xs mb-12 flex items-center justify-between border-b border-emerald-50/50 pb-6"><div className="flex items-center space-x-4"><span className="font-black text-gray-900 uppercase tracking-tighter">박영수 전문의</span><span><time dateTime={selectedPost.created_at}>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</time></span></div></div>
           
           {/* Post Content */}
           {renderStyledContent(selectedPost.content, selectedPost.image_url)}
 
           {/* New: Post Context Question Section */}
-          <div className="mt-24 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <section className="mt-24 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <div className="bg-emerald-50/30 border border-emerald-100 rounded-[3rem] p-8 md:p-12 shadow-sm overflow-hidden relative">
               <div className="absolute top-0 right-0 p-8 opacity-5">
                 <Sparkles size={120} className="text-emerald-900" />
@@ -810,7 +946,7 @@ const App: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Doctor Profile Card */}
           <div className="p-8 md:p-10 bg-white rounded-[3rem] border border-emerald-50 shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left">
@@ -824,7 +960,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="mt-24 flex flex-col items-center"><button onClick={navigateToArchive} className="flex items-center bg-emerald-900 hover:bg-black text-white px-10 py-5 rounded-full transition-all font-black text-xs tracking-widest uppercase shadow-xl"><ArrowLeft size={18} className="mr-3" /><span>Archive Home</span></button></div>
-        </div>
+        </article>
       );
     }
 
