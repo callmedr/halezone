@@ -116,6 +116,15 @@ const App: React.FC = () => {
     window.location.hash = `/post/${id}`;
   };
 
+  const navigateToPostViaArchive = (id: any) => {
+    scrollPosRef.current = window.scrollY;
+    // 브라우저 히스토리에 아카이브를 남기기 위해 순차적으로 해시 변경
+    window.location.hash = '/archive';
+    setTimeout(() => {
+      window.location.hash = `/post/${id}`;
+    }, 10);
+  };
+
   const navigateToHome = () => { window.location.hash = '/'; };
   const navigateToLab = () => { window.location.hash = '/lab'; };
   const navigateToArchive = () => { window.location.hash = '/archive'; };
@@ -131,19 +140,24 @@ const App: React.FC = () => {
         setPostQuestionSuccess(false);
         setPostQuestionContent('');
         window.scrollTo(0, 0);
+        document.title = `${foundPost.title} | Halezone`;
       } else if (!isInitialLoading && posts.length > 0) {
         setSelectedPost(null);
         setView('DETAIL'); 
+        document.title = '기록을 찾을 수 없습니다 | Halezone';
       }
     } else if (path === '/lab') {
       setView('LAB');
       setSelectedPost(null);
+      document.title = '연구소 | Halezone';
     } else if (path === '/archive') {
       setView('LIST');
       setSelectedPost(null);
+      document.title = '지식기록소 | Halezone';
     } else {
       setView('MAIN');
       setSelectedPost(null);
+      document.title = 'Halezone: 숨결의 온도';
     }
   }, [posts, isInitialLoading]);
 
@@ -608,7 +622,7 @@ const App: React.FC = () => {
               {posts.slice(0, 3).map((post) => (
                 <div 
                   key={post.id}
-                  onClick={() => navigateToPost(post.id)}
+                  onClick={() => navigateToPostViaArchive(post.id)}
                   className="group bg-white rounded-[2.5rem] border border-emerald-50 overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
                 >
                   <div className="aspect-[4/3] overflow-hidden relative">
@@ -870,7 +884,7 @@ const App: React.FC = () => {
         <article className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
           <div className="flex items-center justify-between mb-12">
             <div className="flex space-x-3">
-              <button onClick={() => window.history.back()} className="flex items-center bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-100 px-6 py-3 rounded-full transition-all text-emerald-800 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
+              <button onClick={navigateToArchive} className="flex items-center bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-100 px-6 py-3 rounded-full transition-all text-emerald-800 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
               
               {/* DETAIL View Share Button */}
               <button 
@@ -892,64 +906,8 @@ const App: React.FC = () => {
           {/* Post Content */}
           {renderStyledContent(selectedPost.content, selectedPost.image_url)}
 
-          {/* New: Post Context Question Section */}
-          <section className="mt-24 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            <div className="bg-emerald-50/30 border border-emerald-100 rounded-[3rem] p-8 md:p-12 shadow-sm overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Sparkles size={120} className="text-emerald-900" />
-              </div>
-              
-              <div className="relative z-10">
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
-                    <MessageCircle size={24} />
-                  </div>
-                  <div>
-                    <h3 className="serif text-2xl font-bold text-gray-900">사유의 숲에서 마주한 당신의 물음</h3>
-                    <p className="text-emerald-700/60 text-sm font-medium">이 글의 내용 중 더 깊이 알고 싶은 부분이 있으신가요?</p>
-                  </div>
-                </div>
-
-                {!postQuestionSuccess ? (
-                  <div className="space-y-6">
-                    <textarea 
-                      className="w-full h-32 bg-white border border-emerald-50 rounded-[1.5rem] p-6 focus:outline-none focus:ring-2 focus:ring-emerald-200 serif text-lg text-gray-800 placeholder:text-gray-300 resize-none transition-all shadow-inner"
-                      placeholder="사소한 질문이라도 괜찮습니다. 당신의 숨결을 남겨주세요."
-                      value={postQuestionContent}
-                      onChange={(e) => setPostQuestionContent(e.target.value)}
-                    />
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={handlePostQuestionSubmit}
-                        disabled={isSubmittingPostQuestion || !postQuestionContent.trim()}
-                        className="flex items-center space-x-3 bg-emerald-900 text-white px-10 py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-lg hover:bg-black disabled:bg-emerald-200 transition-all hover:-translate-y-1"
-                      >
-                        {isSubmittingPostQuestion ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                        <span>질문 건네기</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-8 text-center animate-in zoom-in duration-500">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6 shadow-md border border-emerald-50">
-                      <CheckCircle2 size={32} />
-                    </div>
-                    <p className="serif text-xl font-bold text-gray-900 mb-2">질문이 소중하게 전달되었습니다</p>
-                    <p className="text-gray-400 text-sm">박영수 전문의가 연구 후 '연구소(LAB)' 섹션에 답변을 남겨드립니다.</p>
-                    <button 
-                      onClick={() => setPostQuestionSuccess(false)}
-                      className="mt-8 text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-200 pb-1"
-                    >
-                      추가 질문하기
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
           {/* Doctor Profile Card */}
-          <div className="p-8 md:p-10 bg-white rounded-[3rem] border border-emerald-50 shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left">
+          <div className="p-8 md:p-10 bg-white rounded-[3rem] border border-emerald-50 shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left mt-16">
             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg shrink-0"><img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover" /></div>
             <div className="space-y-4">
               <h4 className="serif text-2xl font-bold text-gray-900">박영수 전문의</h4>
