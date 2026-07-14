@@ -49,6 +49,82 @@ const FOOTER_SEAL_SIZE = "w-80 h-80";
 // 2. 메인 화면 최하단 '푸터 로고' 크기 설정
 const MAIN_FOOTER_LOGO_SIZE = "w-80 h-80";
 
+// 연관된 추천 게시글을 계산하는 유틸리티 함수 (연관 점수 알고리즘)
+const getRelatedPosts = (currentPost: Post, allPosts: Post[], limit = 2): Post[] => {
+  if (!currentPost || !allPosts || allPosts.length <= 1) return [];
+
+  // 특수문자 및 공백 처리하여 의미 있는 단어 추출
+  const extractWords = (text: string): string[] => {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length >= 2);
+  };
+
+  const currentTitleWords = extractWords(currentPost.title);
+  const currentContentWords = extractWords(currentPost.content);
+
+  // 주요 의학 전문 키워드 목록
+  const medicalKeywords = [
+    "피로", "호르몬", "갑상선", "수면", "영양제", "비타민", "간", "신장", "뇌", "면역", 
+    "위", "장", "소화", "심장", "혈압", "혈당", "당뇨", "다이어트", "비만", "호흡", 
+    "폐", "천식", "알레르기", "피부", "스트레스", "우울", "만성", "염증", "암", "백신"
+  ];
+
+  const scoredPosts = allPosts
+    .filter(post => String(post.id) !== String(currentPost.id))
+    .map(post => {
+      let score = 0;
+      const targetTitle = post.title.toLowerCase();
+      const targetContent = post.content.toLowerCase();
+
+      // 1. 현재 글의 제목 단어가 대상 글의 제목에 포함될 경우 (+10점)
+      currentTitleWords.forEach(word => {
+        if (targetTitle.includes(word)) {
+          score += 10;
+          if (medicalKeywords.includes(word)) score += 5; // 의학 핵심 단어일 경우 추가 가중치
+        }
+      });
+
+      // 2. 현재 글의 제목 단어가 대상 글의 본문에 포함될 경우 (+3점)
+      currentTitleWords.forEach(word => {
+        if (targetContent.includes(word)) {
+          score += 3;
+        }
+      });
+
+      // 3. 현재 글의 본문 속 핵심 의학 키워드가 대상 글의 제목/본문에 교차 매칭될 경우
+      medicalKeywords.forEach(keyword => {
+        const isInCurrent = currentTitleWords.includes(keyword) || currentContentWords.includes(keyword);
+        if (isInCurrent) {
+          if (targetTitle.includes(keyword)) score += 8;
+          if (targetContent.includes(keyword)) score += 2;
+        }
+      });
+
+      return { post, score };
+    });
+
+  // 점수가 높은 순으로 정렬하고, 동점일 경우 최신 글 순으로 정렬
+  let results = scoredPosts
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score || new Date(b.post.created_at).getTime() - new Date(a.post.created_at).getTime())
+    .map(item => item.post);
+
+  // 연관성이 있는 글이 부족하다면 최신 글로 채워줌
+  if (results.length < limit) {
+    const remainingLimit = limit - results.length;
+    const fallbackPosts = allPosts
+      .filter(post => String(post.id) !== String(currentPost.id) && !results.some(r => String(r.id) === String(post.id)))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, remainingLimit);
+    results = [...results, ...fallbackPosts];
+  }
+
+  return results.slice(0, limit);
+};
+
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('MAIN');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -905,6 +981,51 @@ const App: React.FC = () => {
           
           {/* Post Content */}
           {renderStyledContent(selectedPost.content, selectedPost.image_url)}
+
+          {/* Related Posts Recommendation Section */}
+          {(() => {
+            const related = getRelatedPosts(selectedPost, posts, 2);
+            if (related.length === 0) return null;
+            return (
+              <section className="mt-20 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="border-t border-emerald-50/50 pt-16">
+                  <div className="flex items-center space-x-2 text-emerald-500 mb-6">
+                    <Sparkles size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Related Insights</span>
+                  </div>
+                  <h3 className="serif text-2xl font-bold text-gray-900 mb-8">연관된 의학 기록 추천</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {related.map((post) => (
+                      <div 
+                        key={post.id}
+                        onClick={() => navigateToPost(post.id)}
+                        className="group bg-white rounded-3xl border border-emerald-50/70 overflow-hidden cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <div className="aspect-[16/10] overflow-hidden relative bg-emerald-50/10">
+                          <img 
+                            src={post.image_url || LOGO_IMAGE_URL} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            alt={post.title}
+                          />
+                        </div>
+                        <div className="p-6">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Medical Note</span>
+                            <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                            <span className="text-[9px] text-gray-400 font-medium">{new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
+                          </div>
+                          <h4 className="serif text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
+                            {post.title}
+                          </h4>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Doctor Profile Card */}
           <div className="p-8 md:p-10 bg-white rounded-[3rem] border border-emerald-50 shadow-sm flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-10 text-center md:text-left mt-16">
