@@ -28,16 +28,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&family=Pretendard:wght@300;400;600&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+            background-color: #050505;
+        }
         body {
             font-family: 'Pretendard', sans-serif;
-            background-color: #fefefe;
-            color: #333;
+            background-color: #050505;
+            color: #f3f4f6;
         }
         .serif {
-            font-family: 'Noto+Serif+KR', serif;
+            font-family: 'Noto Serif KR', 'Noto+Serif+KR', serif;
         }
         .gowun {
             font-family: 'Gowun Batang', serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
         }
         @keyframes pulse-gentle {
             0%, 100% { transform: scale(1); opacity: 0.8; }
@@ -48,7 +67,6 @@
         }
     </style>
 
-<link rel="stylesheet" href="/index.css">
 <script type="importmap">
 {
   "imports": {
@@ -60,7 +78,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-DLeZECl0.js"></script>
+  <script type="module" crossorigin src="/assets/index-C_IaSy1G.js"></script>
 </head>
 <body>
     <div id="root"></div>
