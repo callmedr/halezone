@@ -27,48 +27,48 @@ const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
       className="group cursor-pointer transition-all duration-500 mb-2 md:mb-0"
       onClick={onClick}
     >
-      <div className="relative aspect-[16/9] md:aspect-[16/10] overflow-hidden rounded-[2rem] md:rounded-lg mb-5 md:mb-3 bg-white shadow-md border border-emerald-50/50 flex items-center justify-center">
+      <div className="relative aspect-[16/9] md:aspect-[16/10] overflow-hidden rounded-[2rem] md:rounded-lg mb-5 md:mb-3 bg-[#0D1117] shadow-xl border border-white/10 group-hover:border-cyan-500/40 group-hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] flex items-center justify-center transition-all duration-500">
         {/* Verified Badge */}
-        <div className="absolute top-4 left-4 md:top-3 md:left-3 z-20 flex items-center bg-white/90 backdrop-blur-md px-3.5 py-1.5 md:px-2.5 md:py-1 rounded-full border border-emerald-50/50 shadow-sm transition-transform duration-500 group-hover:scale-105">
+        <div className="absolute top-4 left-4 md:top-3 md:left-3 z-20 flex items-center bg-[#111111]/80 backdrop-blur-md px-3.5 py-1.5 md:px-2.5 md:py-1 rounded-full border border-cyan-500/30 shadow-md transition-transform duration-500 group-hover:scale-105">
           <img 
             src={LOGO_IMAGE_URL} 
-            className="w-4 h-4 md:w-3 md:h-3 mr-2 object-contain" 
+            className="w-4 h-4 md:w-3 md:h-3 mr-2 object-contain brightness-110" 
             alt="H" 
           />
-          <span className="text-[10px] md:text-[8px] font-black text-emerald-900 uppercase tracking-[0.2em]">Verified</span>
+          <span className="text-[10px] md:text-[8px] font-black text-cyan-400 uppercase tracking-[0.2em]">Verified</span>
         </div>
 
-        <div className="absolute inset-0 bg-emerald-950/0 group-hover:bg-emerald-950/5 transition-all duration-500 z-10"></div>
+        <div className="absolute inset-0 bg-cyan-500/0 group-hover:bg-cyan-500/5 transition-all duration-500 z-10"></div>
         {post.image_url ? (
           <img 
             src={post.image_url} 
             alt={post.title}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-emerald-100 bg-[#fbfcfd] group-hover:bg-lime-50/30 transition-colors">
+          <div className="w-full h-full flex items-center justify-center text-cyan-500/30 bg-[#050505] group-hover:bg-[#111111] transition-colors">
              <div className="relative flex flex-col items-center">
-               <img src={LOGO_IMAGE_URL} className="w-10 h-10 md:w-6 md:h-6 opacity-10 mb-2 grayscale" alt="Background Logo" />
-               <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-emerald-100/60 uppercase">Halezone Archive</span>
+               <img src={LOGO_IMAGE_URL} className="w-10 h-10 md:w-6 md:h-6 opacity-20 mb-2 grayscale brightness-200" alt="Background Logo" />
+               <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-cyan-400/40 uppercase">Halezone Archive</span>
              </div>
           </div>
         )}
         <div className="absolute top-4 right-4 md:top-2.5 md:right-2.5 z-20">
-          <span className="bg-white/95 backdrop-blur-md px-5 py-2.5 md:px-2.5 md:py-1 rounded-lg md:rounded-md text-[11px] md:text-[8px] font-black text-emerald-900 shadow-xl border border-emerald-50/50 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-3 group-hover:translate-y-0 uppercase tracking-widest">
+          <span className="bg-[#050505]/90 backdrop-blur-md px-5 py-2.5 md:px-2.5 md:py-1 rounded-lg md:rounded-md text-[11px] md:text-[8px] font-black text-cyan-300 shadow-xl border border-cyan-500/30 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-3 group-hover:translate-y-0 uppercase tracking-widest">
             Open Record
           </span>
         </div>
       </div>
       <div className="px-3 md:px-0.5">
-        <div className="flex items-center text-[11px] md:text-[9px] font-black text-emerald-500/80 mb-2.5 md:mb-1 space-x-2 uppercase tracking-[0.2em]">
-          <Calendar size={12} className="text-lime-500 md:w-2.5 md:h-2.5" />
+        <div className="flex items-center text-[11px] md:text-[9px] font-black text-cyan-400/80 mb-2.5 md:mb-1 space-x-2 uppercase tracking-[0.2em]">
+          <Calendar size={12} className="text-cyan-400 md:w-2.5 md:h-2.5" />
           <span>{formattedDate}</span>
         </div>
-        <h3 className="serif text-xl md:text-base font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-tight md:leading-snug mb-3 md:mb-1.5">
+        <h3 className="serif text-xl md:text-base font-bold text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-2 leading-tight md:leading-snug mb-3 md:mb-1.5">
           {post.title}
         </h3>
-        <p className="text-gray-500 text-base md:text-[11px] line-clamp-2 leading-relaxed font-light">
+        <p className="text-gray-400 text-base md:text-[11px] line-clamp-2 leading-relaxed font-light">
           {cleanDescription}
         </p>
       </div>
