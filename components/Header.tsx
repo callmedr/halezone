@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LogIn, PlusCircle, LayoutGrid, Compass, BookOpen } from 'lucide-react';
+import { LogIn, PlusCircle, LayoutGrid, BookOpen } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface HeaderProps {
@@ -46,14 +46,6 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, view, onNavigate, onLogout }) 
             <LayoutGrid size={20} className="md:w-3.5 md:h-3.5" />
           </button>
 
-          <button 
-            onClick={() => onNavigate('LAB')}
-            className={`p-3 md:p-2 rounded-full transition-all ${view === 'LAB' ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-gray-400 hover:bg-white/5 hover:text-cyan-300'}`}
-            title="연구소"
-          >
-            <Compass size={20} className="md:w-3.5 md:h-3.5" />
-          </button>
-          
           <button 
             onClick={() => onNavigate('LIST')}
             className={`p-3 md:p-2 rounded-full transition-all ${view === 'LIST' ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-gray-400 hover:bg-white/5 hover:text-cyan-300'}`}

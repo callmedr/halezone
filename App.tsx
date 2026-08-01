@@ -146,6 +146,9 @@ const App: React.FC = () => {
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [linkingRequestId, setLinkingRequestId] = useState<any | null>(null);
 
+  const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
+  const [showBriefingInModal, setShowBriefingInModal] = useState(false);
+
   // 포스트 하단 질문 관련 상태
   const [postQuestionContent, setPostQuestionContent] = useState('');
   const [isSubmittingPostQuestion, setIsSubmittingPostQuestion] = useState(false);
@@ -188,17 +191,35 @@ const App: React.FC = () => {
   }, [searchQuery]);
 
   const navigateToPost = (id: any) => {
-    scrollPosRef.current = window.scrollY;
+    if (view === 'LIST') {
+      scrollPosRef.current = window.scrollY;
+    }
     window.location.hash = `/post/${id}`;
   };
 
   const navigateToPostViaArchive = (id: any) => {
-    scrollPosRef.current = window.scrollY;
-    // 브라우저 히스토리에 아카이브를 남기기 위해 순차적으로 해시 변경
-    window.location.hash = '/archive';
-    setTimeout(() => {
-      window.location.hash = `/post/${id}`;
-    }, 10);
+    if (view === 'LIST') {
+      scrollPosRef.current = window.scrollY;
+    } else {
+      scrollPosRef.current = 0;
+    }
+    window.location.hash = `/post/${id}`;
+  };
+
+  const routeHistoryRef = useRef<string[]>([]);
+
+  const handleReturn = () => {
+    if (routeHistoryRef.current.length > 1) {
+      routeHistoryRef.current.pop();
+      const prev = routeHistoryRef.current[routeHistoryRef.current.length - 1];
+      if (prev) {
+        window.location.hash = prev;
+      } else {
+        navigateToArchive();
+      }
+    } else {
+      navigateToArchive();
+    }
   };
 
   const navigateToHome = () => { window.location.hash = '/'; };
@@ -206,7 +227,20 @@ const App: React.FC = () => {
   const navigateToArchive = () => { window.location.hash = '/archive'; };
 
   const handleRouting = useCallback(() => {
-    const path = window.location.hash.slice(1);
+    const path = window.location.hash.slice(1) || '/';
+
+    // Route history stack tracking
+    if (routeHistoryRef.current[routeHistoryRef.current.length - 1] !== path) {
+      if (
+        routeHistoryRef.current.length > 1 &&
+        routeHistoryRef.current[routeHistoryRef.current.length - 2] === path
+      ) {
+        routeHistoryRef.current.pop();
+      } else {
+        routeHistoryRef.current.push(path);
+      }
+    }
+
     if (path.startsWith('/post/')) {
       const id = decodeURIComponent(path.replace('/post/', ''));
       const foundPost = posts.find(p => String(p.id) === id);
@@ -215,17 +249,20 @@ const App: React.FC = () => {
         setView('DETAIL');
         setPostQuestionSuccess(false);
         setPostQuestionContent('');
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
         document.title = `${foundPost.title} | Halezone`;
       } else if (!isInitialLoading && posts.length > 0) {
         setSelectedPost(null);
         setView('DETAIL'); 
         document.title = '기록을 찾을 수 없습니다 | Halezone';
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
     } else if (path === '/lab') {
-      setView('LAB');
+      setView('MAIN');
+      setIsResearchModalOpen(true);
       setSelectedPost(null);
-      document.title = '연구소 | Halezone';
+      document.title = 'Halezone: 숨결의 온도';
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/archive') {
       setView('LIST');
       setSelectedPost(null);
@@ -234,6 +271,7 @@ const App: React.FC = () => {
       setView('MAIN');
       setSelectedPost(null);
       document.title = 'Halezone: 숨결의 온도';
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [posts, isInitialLoading]);
 
@@ -250,7 +288,7 @@ const App: React.FC = () => {
       }, 10);
       return () => clearTimeout(timeout);
     } else if (view === 'MAIN' || view === 'LAB') {
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [view, isInitialLoading]);
 
@@ -738,44 +776,34 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* Lab Section (Supporting Role) */}
-          <section className="mb-32">
+          {/* Compact Research Request Banner */}
+          <section className="mb-20">
             <div 
-              onClick={navigateToLab}
-              className="group relative rounded-[3.5rem] bg-gradient-to-br from-[#0D1117] via-[#111111] to-[#050505] border border-purple-500/30 overflow-hidden cursor-pointer shadow-2xl hover:shadow-[0_0_50px_rgba(168,85,247,0.2)] hover:-translate-y-1 transition-all duration-700"
+              onClick={() => setIsResearchModalOpen(true)}
+              className="group relative rounded-[2.5rem] bg-gradient-to-r from-[#0D1117] via-[#111622] to-[#0D1117] border border-cyan-500/20 hover:border-cyan-500/50 p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between cursor-pointer transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]"
             >
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,_rgba(168,85,247,0.15)_0%,_transparent_70%)]"></div>
-                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 to-transparent"></div>
-              </div>
-              
-              <div className="relative flex flex-col md:flex-row items-center justify-between p-10 md:p-16">
-                <div className="max-w-xl text-center md:text-left mb-10 md:mb-0">
-                  <div className="inline-flex items-center space-x-3 px-4 py-2 bg-purple-950/60 border border-purple-500/30 backdrop-blur-md rounded-full mb-6">
-                    <Microscope size={16} className="text-purple-300" />
-                    <span className="text-purple-200 font-black text-[10px] uppercase tracking-widest">Medical Insight Lab</span>
+              <div className="flex items-center space-x-5 mb-4 sm:mb-0">
+                <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-500 group-hover:text-black transition-all shrink-0">
+                  <Microscope size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Medical Insight Lab</span>
+                    <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+                    <span className="text-[10px] text-purple-300 font-semibold">주제 제안</span>
                   </div>
-                  <h3 className="serif text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                    더 깊은 통찰이 필요하신가요?<br/>당신의 물음에 답해드립니다.
+                  <h3 className="serif text-lg md:text-xl font-bold text-gray-100 group-hover:text-cyan-300 transition-colors">
+                    궁금한 의학 주제가 있으신가요?
                   </h3>
-                  <p className="text-gray-300 font-light text-lg md:text-base leading-relaxed">
-                    평소 궁금했던 건강 고민이나 의학적 궁금증을 연구소에 남겨주세요.<br className="hidden md:block" />
-                    박영수 전문의가 최신 데이터를 기반으로 명료한 답을 찾아드립니다.
+                  <p className="text-xs text-gray-400 font-light mt-0.5">
+                    박영수 전문의가 논문과 데이터를 기반으로 대신 연구해 드립니다.
                   </p>
                 </div>
-                
-                <div className="shrink-0">
-                  <div className="w-24 h-24 md:w-32 md:h-32 bg-purple-950/40 border border-purple-500/30 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-700 shadow-2xl">
-                    <Send size={40} className="text-purple-300" />
-                  </div>
-                </div>
               </div>
               
-              <div className="absolute bottom-0 right-0 p-10 md:p-16 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                <div className="flex items-center space-x-3 text-cyan-400 font-black text-xs uppercase tracking-[0.3em]">
-                  <span>연구 의뢰하기</span>
-                  <ArrowRight size={16} />
-                </div>
+              <div className="shrink-0 flex items-center space-x-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all">
+                <Send size={14} />
+                <span>연구 의뢰하기</span>
               </div>
             </div>
           </section>
@@ -960,7 +988,7 @@ const App: React.FC = () => {
         <article className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
           <div className="flex items-center justify-between mb-12">
             <div className="flex space-x-3">
-              <button onClick={navigateToArchive} className="flex items-center bg-[#0D1117] hover:bg-cyan-950/60 border border-white/10 hover:border-cyan-500/40 px-6 py-3 rounded-full transition-all text-gray-300 hover:text-cyan-300 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
+              <button onClick={handleReturn} className="flex items-center bg-[#0D1117] hover:bg-cyan-950/60 border border-white/10 hover:border-cyan-500/40 px-6 py-3 rounded-full transition-all text-gray-300 hover:text-cyan-300 font-black text-[11px] tracking-widest uppercase"><ArrowLeft size={16} className="mr-2" /><span>Return</span></button>
               
               {/* DETAIL View Share Button */}
               <button 
@@ -1037,8 +1065,28 @@ const App: React.FC = () => {
               <div className="flex justify-center md:justify-start pt-2"><div className="w-12 h-0.5 bg-cyan-500/30"></div></div>
             </div>
           </div>
+
+          {/* Detail View Compact Research Request Invitation */}
+          <div className="mt-8 p-6 md:p-8 bg-[#0D1117] rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row items-center justify-between text-center md:text-left space-y-4 md:space-y-0 shadow-xl">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-950/60 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0">
+                <Microscope size={22} />
+              </div>
+              <div>
+                <h5 className="serif text-base font-bold text-gray-100">이 주제에 대해 더 궁금한 점이 있으신가요?</h5>
+                <p className="text-xs text-gray-400 font-light mt-0.5">추가 연구 요청이나 새로운 의학 궁금증을 박영수 전문의에게 남겨주세요.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsResearchModalOpen(true)}
+              className="shrink-0 flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-lg transition-all hover:scale-105"
+            >
+              <Send size={14} />
+              <span>연구 의뢰하기</span>
+            </button>
+          </div>
           
-          <div className="mt-24 flex flex-col items-center"><button onClick={navigateToArchive} className="flex items-center bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black px-10 py-5 rounded-full transition-all font-black text-xs tracking-widest uppercase shadow-xl"><ArrowLeft size={18} className="mr-3" /><span>Archive Home</span></button></div>
+          <div className="mt-20 flex flex-col items-center"><button onClick={handleReturn} className="flex items-center bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black px-10 py-5 rounded-full transition-all font-black text-xs tracking-widest uppercase shadow-xl"><ArrowLeft size={18} className="mr-3" /><span>Return</span></button></div>
         </article>
       );
     }
@@ -1071,6 +1119,120 @@ const App: React.FC = () => {
         <img src={LOGO_IMAGE_URL} className="w-6 h-6 md:w-5 md:h-5 relative z-10 object-contain group-hover:hidden brightness-110" alt="T" />
         <ChevronUp size={24} className="hidden group-hover:block relative z-10 text-black animate-bounce-slow" />
       </button>
+
+      {/* Research Request Modal */}
+      {isResearchModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#0D1117] rounded-[2.5rem] border border-white/10 p-6 md:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button 
+              onClick={() => setIsResearchModalOpen(false)}
+              className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-100 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-cyan-950/80 border border-cyan-500/30 rounded-2xl flex items-center justify-center text-cyan-400">
+                <Compass size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Medical Insight Lab</span>
+                <h3 className="serif text-xl font-bold text-gray-100">박영수 전문의에게 연구 의뢰</h3>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 leading-relaxed font-light mb-6">
+              궁금한 증상, 의학적 소문, 약물 정보 등 주제를 남겨주시면 박영수 전문의가 최신 논문과 데이터를 기반으로 직접 검토하고 연구 아카이브에 답을 기록합니다.
+            </p>
+
+            <div className="mb-6">
+              <textarea 
+                className="w-full h-32 bg-[#050505] border border-white/10 rounded-2xl p-4 focus:outline-none focus:border-cyan-500 text-sm text-gray-100 placeholder:text-gray-600 resize-none transition-all"
+                placeholder="예: 영양제 조합 추천, 만성 피로의 의학적 원인, 최신 혈관 건강 관리법 등..."
+                value={requestContent}
+                onChange={(e) => setRequestContent(e.target.value)}
+              />
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center space-x-1.5 text-cyan-400 text-[10px] font-bold">
+                  <Leaf size={12} />
+                  <span>근거 중심 임상 분석</span>
+                </div>
+                <button 
+                  onClick={async () => {
+                    await handleRequestSubmit();
+                    if (requestContent.trim()) {
+                      setIsResearchModalOpen(false);
+                    }
+                  }}
+                  disabled={isSubmittingRequest || !requestContent.trim()}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-md disabled:opacity-40 transition-all hover:scale-105"
+                >
+                  {isSubmittingRequest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  <span>의뢰 전송</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible / Live Requests List */}
+            {requests.length > 0 && (
+              <div className="pt-4 border-t border-white/10">
+                <button 
+                  onClick={() => setShowBriefingInModal(prev => !prev)}
+                  className="w-full flex items-center justify-between text-xs font-bold text-gray-300 hover:text-cyan-300 transition-colors py-2"
+                >
+                  <span className="flex items-center space-x-2">
+                    <Sparkles size={14} className="text-cyan-400" />
+                    <span>진행 중인 연구 브리핑 ({requests.length}건)</span>
+                  </span>
+                  {showBriefingInModal ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showBriefingInModal && (
+                  <div className="mt-3 space-y-2.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {requests.map((req) => {
+                      const status = getStatusInfo(req.status);
+                      return (
+                        <div 
+                          key={req.id} 
+                          onClick={() => {
+                            if (!isAdmin && req.post_id) {
+                              setIsResearchModalOpen(false);
+                              navigateToPost(req.post_id);
+                            }
+                          }} 
+                          className={`flex items-center justify-between p-3 rounded-xl border bg-[#050505] text-xs transition-all ${!isAdmin && req.post_id ? 'cursor-pointer hover:border-cyan-500/40 border-white/10' : 'border-white/5'}`}
+                        >
+                          <p className="text-gray-300 line-clamp-1 font-light pr-2">{req.content}</p>
+                          <div className="flex items-center space-x-2 shrink-0">
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (isAdmin) updateRequestStatus(req.id, req.status); 
+                              }} 
+                              className={`flex items-center space-x-1 px-2.5 py-1 rounded-full border text-[10px] font-bold ${status.color}`}
+                            >
+                              {status.icon}
+                              <span>{status.text}</span>
+                            </button>
+                            {isAdmin && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); deleteRequest(req.id); }} 
+                                className="p-1 text-gray-500 hover:text-red-400"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {linkingRequestId && <div className="fixed inset-0 z-[120] flex items-center justify-center p-8 bg-black/80 backdrop-blur-md"><div className="bg-[#0D1117] rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-white/10"><div className="flex items-center justify-between mb-8"><h3 className="serif text-2xl font-bold text-gray-100">연구 결과 연결하기</h3><button onClick={() => setLinkingRequestId(null)} className="p-2 text-gray-400 hover:bg-white/10 rounded-full"><X size={20} /></button></div><div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">{posts.map(post => <button key={post.id} onClick={() => handleLinkPost(post.id)} className="w-full text-left p-4 rounded-2xl border border-white/10 hover:border-cyan-500/40 hover:bg-cyan-950/30 transition-all flex items-center justify-between group"><span className="serif text-base font-bold text-gray-200 line-clamp-1">{post.title}</span><LinkIcon size={16} className="text-cyan-400" /></button>)}</div><button onClick={() => handleLinkPost(null)} className="w-full mt-6 py-4 bg-[#111111] text-gray-400 hover:text-gray-200 rounded-2xl font-bold text-sm">연결 없이 완료 처리</button></div></div>}
       {showDeleteModal && <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300"><div className="bg-[#0D1117] rounded-[3rem] p-12 max-w-md w-full shadow-2xl border border-white/10 text-center"><div className="w-16 h-16 bg-red-950/50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/30"><Trash2 className="text-red-400" size={32} /></div><h3 className="serif text-2xl font-bold text-gray-100 mb-4">기록을 삭제하시겠습니까?</h3><div className="flex space-x-4 mt-8"><button onClick={() => setShowDeleteModal(false)} className="flex-1 py-5 rounded-2xl font-black text-gray-400 hover:bg-white/5 transition-colors text-sm uppercase">취소</button><button onClick={executeDelete} className="flex-1 py-5 rounded-2xl font-black bg-red-600 text-white hover:bg-red-500 transition-all text-sm uppercase">삭제하기</button></div></div></div>}
