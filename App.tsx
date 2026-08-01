@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import HERO_ARTWORK_URL from './src/assets/images/medical_cell_artwork_1785584686578.jpg';
 import { supabase, ADMIN_EMAIL, STORAGE_BUCKET } from './supabase';
 import { Post, ViewState, BlogRequest, RequestStatus } from './types';
 import Header from './components/Header';
@@ -672,42 +673,110 @@ const App: React.FC = () => {
 
     if (view === 'MAIN') {
       return (
-        <div className="animate-in fade-in duration-1000 py-10 md:py-16">
-          <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
-            <div className="order-2 lg:order-1 space-y-8">
-              <div className="inline-flex items-center space-x-3 px-4 py-2 bg-[#0D1117] border border-cyan-500/30 rounded-full">
-                <Award size={16} className="text-cyan-400" />
-                <span className="text-cyan-300 font-black text-[10px] uppercase tracking-widest">Medical Insight Specialist</span>
+        <div className="animate-in fade-in duration-1000 py-6 md:py-12">
+          {/* Top Hero Section */}
+          <section className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center mb-20 md:mb-28 pt-2">
+            {/* Ambient Background Glows */}
+            <div className="absolute -top-20 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+            <div className="absolute top-10 right-0 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+
+            {/* Left Column (Typography, Explanation, Badges, CTAs) */}
+            <div className="lg:col-span-7 space-y-8 z-10">
+              {/* Eyebrow Subtitle */}
+              <div className="inline-flex items-center space-x-2.5 px-4 py-2 bg-cyan-950/60 border border-cyan-500/30 backdrop-blur-md rounded-full shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span className="text-cyan-300 font-black text-[11px] uppercase tracking-[0.25em]">
+                  EVIDENCE. RESEARCH. MEDICINE.
+                </span>
               </div>
-              <h1 className="serif text-2xl md:text-3xl lg:text-4xl font-bold text-gray-100 leading-relaxed">
-                서울대의대 박영수 전문의가<br/>
-                <span className="text-cyan-400">의학의 숨결</span>을 해석합니다.
+
+              {/* Main Catchphrase */}
+              <h1 className="serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.15] tracking-tight">
+                Where Medical <br className="hidden sm:block" />
+                <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+                  Evidence
+                </span>{" "}
+                Becomes Clear.
               </h1>
-              <p className="text-gray-300 text-lg md:text-xl font-light leading-relaxed max-w-xl">
-                서울대학교 의과대학을 졸업하고 서울대병원 산부인과에서 임상을 수련한 전문의 박영수입니다. 
-                어려운 의학 지식을 쉽고 따뜻한 지혜로 바꾸어, 당신의 숨결이 한결 더 편안해질 수 있는 작은 통찰들을 기록합니다.
-              </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center space-x-2 text-gray-400">
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]"></div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-300">SNU Medical College</span>
+
+              {/* Description */}
+              <div className="space-y-3 max-w-xl">
+                <p className="text-gray-100 text-lg sm:text-xl font-medium leading-relaxed">
+                  어려운 최신 의학 논문, 읽기 쉽고 흥미로운 이야기로 찾아옵니다.
+                </p>
+                <p className="text-gray-400 text-sm sm:text-base font-light leading-relaxed">
+                  서울대 의대 출신 박영수 전문의가 세계적인 학술지의 최신 의학 소식을 쉽게 풀어 전해드립니다.
+                </p>
+              </div>
+
+              {/* Feature Value Badges (Option 2: Paper, Specialist Analysis, Clear Insight) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 max-w-xl">
+                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
+                  <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 shrink-0">
+                    <BookOpen size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-200">Peer-Reviewed</div>
+                    <div className="text-[10px] text-gray-400 font-light">신뢰성 있는 최신 논문</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2 text-gray-400">
-                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-300">SNU Hospital OBGYN</span>
+
+                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
+                  <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 shrink-0">
+                    <Award size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-200">SNU Specialist</div>
+                    <div className="text-[10px] text-gray-400 font-light">전문의 직접 분석</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
+                  <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-500/30 text-purple-400 shrink-0">
+                    <Sparkles size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-200">Clear Insight</div>
+                    <div className="text-[10px] text-gray-400 font-light">쉬운 근거 중심 해석</div>
+                  </div>
                 </div>
               </div>
+
+
             </div>
-            
-            <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-md aspect-square">
-                <div className="absolute -inset-10 bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-[80px] opacity-70"></div>
-                <div className="relative w-full h-full rounded-[3rem] overflow-hidden shadow-2xl border-4 border-cyan-500/30 transform rotate-2 bg-[#0D1117]">
-                  <img src={DOCTOR_PHOTO_URL} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 hover:scale-110 opacity-95" alt="박영수 전문의" />
-                </div>
-                <div className="absolute -bottom-6 -left-6 bg-[#0D1117]/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-purple-500/30 animate-bounce-slow">
-                   <Quote className="text-purple-400 mb-2" size={24} />
-                   <p className="serif text-sm italic text-gray-200">"가장 명료한 지식은<br/>가장 따뜻한 위로가 됩니다."</p>
+
+            {/* Right Column (High-Detail 3D Artwork) */}
+            <div className="lg:col-span-5 relative flex justify-center lg:justify-end z-10">
+              <div className="relative w-full max-w-md lg:max-w-none aspect-square group">
+                {/* Multi-layered Ambient Glows */}
+                <div className="absolute -inset-6 bg-gradient-to-br from-emerald-500/20 via-cyan-500/30 to-purple-600/30 rounded-[3.5rem] blur-3xl opacity-75 group-hover:opacity-100 transition-opacity duration-1000"></div>
+
+                {/* 3D Artwork Container */}
+                <div className="relative w-full h-full rounded-[3rem] overflow-hidden border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.25)] bg-[#0A0E17] group-hover:border-cyan-400/50 transition-all duration-700">
+                  <img 
+                    src={HERO_ARTWORK_URL} 
+                    loading="eager"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out" 
+                    alt="Biomedical 3D Visual Art" 
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D1117]/90 via-transparent to-transparent opacity-80"></div>
+
+                  {/* Glassmorphic Doctor Badge */}
+                  <div className="absolute bottom-6 left-6 right-6 p-4 md:p-5 rounded-2xl bg-[#0D1117]/85 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-between">
+                    <div className="flex items-center space-x-3.5">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-cyan-500/30 shrink-0 shadow-md">
+                        <img src={DOCTOR_PHOTO_URL} className="w-full h-full object-cover" alt="박영수 전문의" referrerPolicy="no-referrer" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-100">박영수 전문의</div>
+                        <div className="text-[10px] text-cyan-300 font-light">서울대병원 산부인과 수련</div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-[10px] font-black uppercase tracking-wider">
+                      Halezone
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

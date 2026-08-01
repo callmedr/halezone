@@ -31,10 +31,9 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, view, onNavigate, onLogout }) 
             />
           </div>
           
-          <div className="flex flex-col">
-            <span className="text-cyan-400 text-[10px] md:text-[8px] font-black uppercase tracking-[0.25em] leading-none mb-0.5">Halezone</span>
-            <TitleTag className="serif text-lg md:text-sm font-bold text-gray-100 leading-tight">숨결의 온도</TitleTag>
-          </div>
+          <TitleTag className="text-xl md:text-lg font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+            halezone
+          </TitleTag>
         </div>
         
         <nav className="flex items-center space-x-1 md:space-x-0">
