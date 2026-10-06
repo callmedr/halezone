@@ -314,8 +314,8 @@ const App: React.FC = () => {
       newTitle = "의학 연구소 | Halezone";
       newDesc = "박영수 전문의에게 궁금한 의학 정보를 직접 의뢰하세요. 최신 논문을 바탕으로 답변해 드립니다.";
     } else if (view === 'LIST') {
-      newTitle = "기록보관소 | Halezone";
-      newDesc = "박영수 전문의가 정립한 명료한 의학 지식의 아카이브입니다.";
+      newTitle = "의학 소식 | Halezone";
+      newDesc = "박영수 전문의가 전하는 최신 의학 소식입니다.";
     }
 
     document.title = newTitle;
@@ -474,13 +474,38 @@ const App: React.FC = () => {
     }
   };
 
+  const formatReferrerTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${month}.${day} ${hours}:${minutes}`;
+    } catch (e) {
+      return "";
+    }
+  };
+
   const fetchPosts = useCallback(async () => {
     setLoading(true);
+    const startTime = Date.now();
     try {
       const { data, error: fetchError } = await supabase.from('blog').select('*').order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
       setPosts(data || []);
-    } catch (err: any) { setError(err.message); } finally { setIsInitialLoading(false); setLoading(false); }
+    } catch (err: any) { 
+      setError(err.message); 
+    } finally { 
+      // 스플래쉬 노출 시간을 2배(최소 2초)로 확대
+      const elapsedTime = Date.now() - startTime;
+      const minSplashTime = 2000;
+      const remainingTime = Math.max(0, minSplashTime - elapsedTime);
+      setTimeout(() => {
+        setIsInitialLoading(false);
+        setLoading(false);
+      }, remainingTime);
+    }
   }, []);
 
   const fetchRequests = useCallback(async () => {
@@ -658,16 +683,16 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (isInitialLoading) return (
-      <div className="flex flex-col items-center justify-center py-48 animate-in fade-in duration-700">
-        <div className="relative mb-10">
-          <div className="absolute inset-0 bg-emerald-100 rounded-full blur-2xl animate-pulse opacity-40"></div>
+      <div className="flex flex-col items-center justify-center min-h-[65vh] py-32 animate-in fade-in duration-700">
+        <div className="relative mb-12 group">
+          <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-3xl animate-pulse opacity-60"></div>
           <img 
             src={LOGO_IMAGE_URL} 
-            className="w-24 h-24 relative z-10 animate-pulse-gentle object-contain" 
+            className="w-48 h-48 sm:w-56 sm:h-56 relative z-10 animate-pulse-gentle object-contain brightness-110" 
             alt="Halezone Loading" 
           />
         </div>
-        <p className="text-emerald-800/40 text-[10px] tracking-[0.5em] uppercase font-black">Halezone Insight</p>
+        <p className="text-cyan-400/80 text-xs sm:text-sm tracking-[0.6em] uppercase font-black">Halezone Medical News</p>
       </div>
     );
 
@@ -691,7 +716,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Main Catchphrase */}
-              <h1 className="serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.15] tracking-tight">
+              <h1 className="serif text-[2.5rem] sm:text-5xl lg:text-6xl font-bold text-white leading-[1.15] tracking-tight">
                 Where Medical <br className="hidden sm:block" />
                 <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
                   Evidence
@@ -700,47 +725,16 @@ const App: React.FC = () => {
               </h1>
 
               {/* Description */}
-              <div className="space-y-3 max-w-xl">
-                <p className="text-gray-100 text-lg sm:text-xl font-medium leading-relaxed">
+              <div className="space-y-3.5 max-w-xl">
+                <p className="text-gray-100 text-2xl sm:text-xl font-medium leading-relaxed">
                   어려운 최신 의학 논문, 읽기 쉽고 흥미로운 이야기로 찾아옵니다.
                 </p>
-                <p className="text-gray-400 text-sm sm:text-base font-light leading-relaxed">
+                <p className="text-gray-400 text-lg sm:text-base font-light leading-relaxed">
                   서울대 의대 출신 박영수 전문의가 세계적인 학술지의 최신 의학 소식을 쉽게 풀어 전해드립니다.
                 </p>
               </div>
 
-              {/* Feature Value Badges (Option 2: Paper, Specialist Analysis, Clear Insight) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 max-w-xl">
-                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
-                  <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 shrink-0">
-                    <BookOpen size={18} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-gray-200">Peer-Reviewed</div>
-                    <div className="text-[10px] text-gray-400 font-light">신뢰성 있는 최신 논문</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
-                  <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 shrink-0">
-                    <Award size={18} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-gray-200">SNU Specialist</div>
-                    <div className="text-[10px] text-gray-400 font-light">전문의 직접 분석</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3 p-3.5 rounded-2xl bg-[#0D1117] border border-white/10 backdrop-blur-sm shadow-md">
-                  <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-500/30 text-purple-400 shrink-0">
-                    <Sparkles size={18} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-gray-200">Clear Insight</div>
-                    <div className="text-[10px] text-gray-400 font-light">쉬운 근거 중심 해석</div>
-                  </div>
-                </div>
-              </div>
+              {/* Hero description without feature badges */}
 
 
             </div>
@@ -763,17 +757,17 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0D1117]/90 via-transparent to-transparent opacity-80"></div>
 
                   {/* Glassmorphic Doctor Badge */}
-                  <div className="absolute bottom-6 left-6 right-6 p-4 md:p-5 rounded-2xl bg-[#0D1117]/85 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-between">
-                    <div className="flex items-center space-x-3.5">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-cyan-500/30 shrink-0 shadow-md">
+                  <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 md:bottom-5 md:left-5 md:right-5 p-4 sm:p-5 md:p-3.5 rounded-2xl bg-[#0D1117]/90 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-between">
+                    <div className="flex items-center space-x-3.5 md:space-x-3">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-11 md:h-11 rounded-xl overflow-hidden border border-cyan-500/30 shrink-0 shadow-md">
                         <img src={DOCTOR_PHOTO_URL} className="w-full h-full object-cover" alt="박영수 전문의" referrerPolicy="no-referrer" />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-gray-100">박영수 전문의</div>
-                        <div className="text-[10px] text-cyan-300 font-light">서울대병원 산부인과 수련</div>
+                        <div className="text-base sm:text-xl md:text-sm font-bold text-gray-100 leading-snug">박영수 전문의</div>
+                        <div className="text-xs sm:text-base md:text-[11px] text-cyan-300 font-medium">서울대병원 산부인과 수련</div>
                       </div>
                     </div>
-                    <div className="px-3 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-[10px] font-black uppercase tracking-wider">
+                    <div className="px-3 py-1.5 md:px-2.5 md:py-1 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm md:text-[10px] font-black uppercase tracking-wider shrink-0">
                       Halezone
                     </div>
                   </div>
@@ -782,7 +776,7 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* Latest Insights Section (Archive Preview) */}
+          {/* Latest Insights Section (Medical News Preview) */}
           <section className="mb-32">
             <div className="flex items-end justify-between mb-10 px-2">
               <div>
@@ -790,13 +784,13 @@ const App: React.FC = () => {
                   <Sparkles size={16} />
                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Latest Insights</span>
                 </div>
-                <h3 className="serif text-3xl md:text-4xl font-bold text-gray-100">최신 의학 기록</h3>
+                <h3 className="serif text-3xl md:text-4xl font-bold text-gray-100">최신 의학 소식</h3>
               </div>
               <button 
                 onClick={navigateToArchive}
                 className="hidden md:flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 font-bold text-sm transition-colors group"
               >
-                <span>전체 기록 보기</span>
+                <span>전체 소식 보기</span>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -818,7 +812,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="p-8">
                     <div className="flex items-center space-x-3 mb-4">
-                      <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Archive</span>
+                      <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Medical News</span>
                       <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
                       <span className="text-[10px] text-gray-400 font-medium">{new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
                     </div>
@@ -839,7 +833,7 @@ const App: React.FC = () => {
                 onClick={navigateToArchive}
                 className="inline-flex items-center space-x-3 bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-cyan-900/80 transition-all"
               >
-                <span>전체 기록 보기</span>
+                <span>전체 소식 보기</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -877,15 +871,57 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <footer className="relative -mx-8 md:-mx-12 px-8 md:px-12 py-24 bg-[#0D1117] rounded-t-[4rem] border-t border-white/10 flex flex-col items-center text-center">
-             <div className="relative mb-10 group">
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-3xl opacity-30 group-hover:scale-125 transition-transform duration-1000"></div>
-                <img src={LOGO_IMAGE_URL} className={`${MAIN_FOOTER_LOGO_SIZE} relative z-10 object-contain brightness-110`} alt="Halezone Logo Footer" />
+          <footer className="relative -mx-8 md:-mx-12 px-8 md:px-12 py-20 bg-[#0D1117] rounded-t-[4rem] border-t border-white/10 flex flex-col items-center text-center">
+             {/* Mini Profile Card */}
+             <div className="w-full max-w-xl md:max-w-md bg-[#161B22] border border-white/10 rounded-3xl p-7 sm:p-8 md:p-5 mb-8 shadow-2xl relative overflow-hidden text-left flex items-center space-x-5 sm:space-x-6 md:space-x-4">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-cyan-950 to-teal-950 border border-cyan-500/40 flex items-center justify-center shadow-lg">
+                   <img src={LOGO_IMAGE_URL} className="w-12 h-12 sm:w-14 sm:h-14 md:w-8 md:h-8 object-contain" alt="Dr. Park Profile Badge" />
+                </div>
+                <div className="relative z-10 flex-1 min-w-0">
+                   <div className="flex flex-wrap items-center gap-2.5 md:gap-2 mb-2 md:mb-1">
+                      <span className="font-extrabold text-gray-100 text-xl sm:text-2xl md:text-base">박영수 전문의</span>
+                      <span className="text-sm sm:text-base md:text-xs font-bold px-3 py-1 md:px-2 md:py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 shrink-0">
+                         서울대 의대
+                      </span>
+                   </div>
+                </div>
              </div>
-             <h2 className="serif text-2xl md:text-3xl font-bold text-gray-100 mb-4">가장 명료한 지식은<br className="md:hidden" /> 가장 따뜻한 위로가 됩니다</h2>
-             <p className="text-gray-400 font-light mb-12 max-w-md mx-auto text-sm leading-relaxed">박영수 전문의는 의학적 전문성이 당신의 일상에 스며들어 더 건강한 내일을 만들 수 있도록 매일 연구하고 기록합니다.</p>
-             
-             <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6 mb-16">
+
+             {/* Footer Feature Badges */}
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full max-w-2xl mb-12 text-left">
+                <div className="flex items-center space-x-3.5 md:space-x-3 p-4 md:p-3 rounded-2xl bg-[#161B22] border border-white/10 shadow-md">
+                   <div className="p-2.5 md:p-2 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 shrink-0">
+                      <BookOpen className="w-5.5 h-5.5 md:w-4.5 md:h-4.5" />
+                   </div>
+                   <div>
+                      <div className="text-base md:text-xs font-bold text-gray-100">Peer-Reviewed</div>
+                      <div className="text-xs sm:text-sm md:text-[10px] text-gray-300 font-medium">신뢰성 있는 최신 논문</div>
+                   </div>
+                </div>
+
+                <div className="flex items-center space-x-3.5 md:space-x-3 p-4 md:p-3 rounded-2xl bg-[#161B22] border border-white/10 shadow-md">
+                   <div className="p-2.5 md:p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 shrink-0">
+                      <Award className="w-5.5 h-5.5 md:w-4.5 md:h-4.5" />
+                   </div>
+                   <div>
+                      <div className="text-base md:text-xs font-bold text-gray-100">SNU Specialist</div>
+                      <div className="text-xs sm:text-sm md:text-[10px] text-gray-300 font-medium">전문의 직접 분석</div>
+                   </div>
+                </div>
+
+                <div className="flex items-center space-x-3.5 md:space-x-3 p-4 md:p-3 rounded-2xl bg-[#161B22] border border-white/10 shadow-md">
+                   <div className="p-2.5 md:p-2 rounded-xl bg-purple-950/80 border border-purple-500/30 text-purple-400 shrink-0">
+                      <Sparkles className="w-5.5 h-5.5 md:w-4.5 md:h-4.5" />
+                   </div>
+                   <div>
+                      <div className="text-base md:text-xs font-bold text-gray-100">Clear Insight</div>
+                      <div className="text-xs sm:text-sm md:text-[10px] text-gray-300 font-medium">쉬운 근거 중심 해석</div>
+                   </div>
+                </div>
+             </div>
+
+             <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6">
                 <a href="mailto:callmedoctorpark@gmail.com" className="group flex items-center space-x-4 bg-[#111111] px-8 py-4 rounded-full shadow-xl border border-white/10 hover:border-cyan-500/40 transition-all hover:-translate-y-1">
                    <div className="w-10 h-10 bg-cyan-950 rounded-full flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
                       <Mail size={18} />
@@ -909,12 +945,6 @@ const App: React.FC = () => {
                       <p className="text-sm font-bold">Halezone 공유하기</p>
                    </div>
                 </button>
-             </div>
-
-             <div className="w-16 h-0.5 bg-cyan-500/30 rounded-full mb-8"></div>
-             <div className="space-y-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em]">© {new Date().getFullYear()} HALEZONE · ALL RIGHTS RESERVED</p>
-                <p className="text-[9px] text-gray-500 font-medium">Design & Content by Dr. Youngsoo Park</p>
              </div>
           </footer>
         </div>
@@ -990,14 +1020,14 @@ const App: React.FC = () => {
       return (
         <div className="animate-in fade-in duration-700 py-10">
           <div className="max-w-[42rem] mx-auto text-center mb-16">
-            <div className="inline-flex items-center space-x-3 px-4 py-2 bg-purple-950/60 border border-purple-500/30 rounded-full mb-6"><BookOpen size={16} className="text-purple-300" /><span className="text-purple-200 font-black text-[10px] uppercase tracking-widest">Medical Insight Archive</span></div>
-            <h2 className="serif text-4xl md:text-5xl font-bold text-gray-100 mb-6">지식의 기록</h2>
-            <p className="text-gray-400 text-lg md:text-base font-light max-w-lg mx-auto leading-relaxed">박영수 전문의가 정돈한 명료한 통찰을 만나보세요.</p>
+            <div className="inline-flex items-center space-x-3 px-4 py-2 bg-purple-950/60 border border-purple-500/30 rounded-full mb-6"><BookOpen size={16} className="text-purple-300" /><span className="text-purple-200 font-black text-[10px] uppercase tracking-widest">Medical Insight News</span></div>
+            <h2 className="serif text-4xl md:text-5xl font-bold text-gray-100 mb-6">의학 소식</h2>
+            <p className="text-gray-400 text-lg md:text-base font-light max-w-lg mx-auto leading-relaxed">박영수 전문의가 전하는 명료한 최신 의학 소식을 만나보세요.</p>
           </div>
           <div className="max-w-[42rem] mx-auto mb-16 relative group">
             <div className="relative flex items-center bg-[#0D1117] border border-white/10 rounded-full px-8 py-5 shadow-2xl focus-within:shadow-[0_0_25px_rgba(6,182,212,0.2)] focus-within:border-cyan-500/50 transition-all duration-300 z-10">
               <Search size={22} className="text-cyan-400 mr-5" />
-              <input type="text" placeholder="어떤 숨결을 찾으시나요?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent outline-none text-gray-100 placeholder:text-gray-500 text-lg font-light" />
+              <input type="text" placeholder="어떤 소식을 찾으시나요?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent outline-none text-gray-100 placeholder:text-gray-500 text-lg font-light" />
               {searchQuery && <button onClick={() => setSearchQuery('')} className="p-2 text-gray-400 hover:text-cyan-300"><X size={20} /></button>}
             </div>
             {isAdmin && (
@@ -1013,9 +1043,13 @@ const App: React.FC = () => {
                     </div>
                     <ul className="space-y-3">
                       {recentReferrers.map((log, i) => (
-                        <li key={i} className="flex items-center justify-between text-[11px] group">
-                          <span className="font-bold text-gray-300 group-hover:text-cyan-300 transition-colors">{getReferrerName(log.referrer)}</span>
-                          <span className="text-gray-500 font-medium">{new Date(log.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <li key={i} className="flex items-center justify-between text-[11px] group gap-2">
+                          <span className="font-bold text-gray-300 group-hover:text-cyan-300 transition-colors truncate" title={log.referrer || "직접 유입 / 북마크"}>
+                            {getReferrerName(log.referrer)}
+                          </span>
+                          <span className="text-gray-500 font-medium shrink-0 tabular-nums text-[10px]">
+                            {formatReferrerTime(log.created_at)}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -1038,21 +1072,21 @@ const App: React.FC = () => {
                     className="group relative flex items-center space-x-4 bg-[#0D1117] border border-white/10 px-12 py-5 rounded-full shadow-xl hover:border-cyan-500/40 hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="absolute inset-0 rounded-full bg-cyan-500/10 scale-0 group-hover:scale-100 transition-transform duration-500"></div>
-                    <span className="relative z-10 text-[11px] font-black text-cyan-300 uppercase tracking-[0.3em]">기록 더 불러오기</span>
+                    <span className="relative z-10 text-[11px] font-black text-cyan-300 uppercase tracking-[0.3em]">소식 더 불러오기</span>
                     <ChevronDown size={18} className="relative z-10 text-cyan-400 group-hover:translate-y-1 transition-transform" />
                   </button>
                 </div>
               )}
             </>
           ) : (
-            <div className="py-28 text-center"><p className="serif italic text-gray-400 mb-12 text-lg">기록을 찾을 수 없습니다.</p><button onClick={() => setSearchQuery('')} className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-black rounded-full text-xs font-black uppercase shadow-xl">Show All Records</button></div>
+            <div className="py-28 text-center"><p className="serif italic text-gray-400 mb-12 text-lg">소식을 찾을 수 없습니다.</p><button onClick={() => setSearchQuery('')} className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-black rounded-full text-xs font-black uppercase shadow-xl">Show All News</button></div>
           )}
         </div>
       );
     }
 
     if (view === 'DETAIL') {
-      if (!selectedPost) return <div className="max-w-2xl mx-auto py-32 text-center"><h2 className="serif text-4xl font-bold text-gray-100 mb-6">길을 잃으셨나요?</h2><button onClick={navigateToArchive} className="px-12 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black rounded-full font-black text-xs tracking-widest uppercase shadow-xl">Back to Archive</button></div>;
+      if (!selectedPost) return <div className="max-w-2xl mx-auto py-32 text-center"><h2 className="serif text-4xl font-bold text-gray-100 mb-6">길을 잃으셨나요?</h2><button onClick={navigateToArchive} className="px-12 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black rounded-full font-black text-xs tracking-widest uppercase shadow-xl">Back to News</button></div>;
       return (
         <article className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32 pt-10">
           <div className="flex items-center justify-between mb-12">
@@ -1072,7 +1106,7 @@ const App: React.FC = () => {
             
             {isAdmin && <div className="flex space-x-2"><button onClick={() => setView('EDIT')} className="p-3 text-cyan-400 hover:bg-white/5 rounded-full"><Edit size={20} /></button><button onClick={() => setShowDeleteModal(true)} className="p-3 text-red-400 hover:bg-red-950/40 rounded-full"><Trash2 size={20} /></button></div>}
           </div>
-          <div className="mb-4"><span className="text-[11px] font-black tracking-[0.5em] text-cyan-400 uppercase">Archive No. {String(selectedPost.id).slice(0, 6)}</span></div>
+          <div className="mb-4"><span className="text-[11px] font-black tracking-[0.5em] text-cyan-400 uppercase">News No. {String(selectedPost.id).slice(0, 6)}</span></div>
           <h1 className="serif text-[2.5rem] md:text-[2.2rem] font-bold text-gray-100 mb-8 leading-tight">{selectedPost.title}</h1>
           <div className="text-gray-400 text-xs mb-12 flex items-center justify-between border-b border-white/10 pb-6"><div className="flex items-center space-x-4"><span className="font-black text-gray-200 uppercase tracking-tighter">박영수 전문의</span><span><time dateTime={selectedPost.created_at}>{new Date(selectedPost.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</time></span></div></div>
           
@@ -1211,7 +1245,7 @@ const App: React.FC = () => {
             </div>
 
             <p className="text-xs text-gray-400 leading-relaxed font-light mb-6">
-              궁금한 증상, 의학적 소문, 약물 정보 등 주제를 남겨주시면 박영수 전문의가 최신 논문과 데이터를 기반으로 직접 검토하고 연구 아카이브에 답을 기록합니다.
+              궁금한 증상, 의학적 소문, 약물 정보 등 주제를 남겨주시면 박영수 전문의가 최신 논문과 데이터를 기반으로 직접 검토하고 의학 소식으로 답을 전해드립니다.
             </p>
 
             <div className="mb-6">

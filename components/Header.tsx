@@ -31,8 +31,8 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, view, onNavigate, onLogout }) 
             />
           </div>
           
-          <TitleTag className="text-xl md:text-lg font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
-            halezone
+          <TitleTag className="text-xl md:text-lg font-black tracking-wider bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:to-emerald-300 transition-all">
+            HALEZONE
           </TitleTag>
         </div>
         
@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, view, onNavigate, onLogout }) 
           <button 
             onClick={() => onNavigate('LIST')}
             className={`p-3 md:p-2 rounded-full transition-all ${view === 'LIST' ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-gray-400 hover:bg-white/5 hover:text-cyan-300'}`}
-            title="아카이브"
+            title="의학 소식"
           >
             <BookOpen size={20} className="md:w-3.5 md:h-3.5" />
           </button>

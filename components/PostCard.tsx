@@ -50,7 +50,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
           <div className="w-full h-full flex items-center justify-center text-cyan-500/30 bg-[#050505] group-hover:bg-[#111111] transition-colors">
              <div className="relative flex flex-col items-center">
                <img src={LOGO_IMAGE_URL} className="w-10 h-10 md:w-6 md:h-6 opacity-20 mb-2 grayscale brightness-200" alt="Background Logo" />
-               <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-cyan-400/40 uppercase">Halezone Archive</span>
+               <span className="serif italic text-sm md:text-[9px] font-black tracking-[0.4em] text-cyan-400/40 uppercase">Halezone Medical News</span>
              </div>
           </div>
         )}
